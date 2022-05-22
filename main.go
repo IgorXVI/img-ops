@@ -1,0 +1,165 @@
+package main
+
+import (
+	"fmt"
+	"image"
+	"image/color"
+	_ "image/jpeg"
+	"image/png"
+	"os"
+)
+
+func createImgFromMatrix(matrix [][][3]uint8) {
+	width := len(matrix)
+	height := len(matrix[0])
+
+	fmt.Printf("w: %v, h: %v", width, height)
+
+	upLeft := image.Point{0, 0}
+	lowRight := image.Point{width, height}
+
+	img := image.NewNRGBA(image.Rectangle{upLeft, lowRight})
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			img.Set(x, y, color.RGBA{matrix[x][y][0], matrix[x][y][1], matrix[x][y][2], 255})
+		}
+	}
+
+	f, _ := os.Create("image.png")
+	png.Encode(f, img)
+	f.Close()
+}
+
+func loadImg(filePath string) ([][][3]uint8, error) {
+	imgFile, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer imgFile.Close()
+
+	image, _, err := image.Decode(imgFile)
+	if err != nil {
+		return nil, err
+	}
+
+	bounds := image.Bounds()
+
+	RGBMatrix := [][][3]uint8{}
+
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		newX := [][3]uint8{}
+
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			r, g, b, _ := image.At(x, y).RGBA()
+
+			newY := [3]uint8{uint8(r / 257), uint8(g / 257), uint8(b / 257)}
+
+			newX = append(newX, newY)
+		}
+
+		RGBMatrix = append(RGBMatrix, newX)
+	}
+
+	return RGBMatrix, nil
+}
+
+func loadImgs(paths []string) ([][][][3]uint8, error) {
+	matrixes := [][][][3]uint8{}
+
+	for i := 0; i < len(paths); i++ {
+		path := paths[i]
+
+		matrix, err := loadImg(path)
+
+		if err != nil {
+			return nil, err
+		}
+
+		matrixes = append(matrixes, matrix)
+	}
+
+	return matrixes, nil
+}
+
+type AnyInteger interface {
+	int | uint8
+}
+
+func getMaxNum[T AnyInteger](num1 T, num2 T) T {
+	var greatestNum T = 0
+	if num1 > num2 {
+		greatestNum = num1
+	} else {
+		greatestNum = num2
+	}
+	return greatestNum
+}
+
+func addPixels(pixel1 uint8, pixel2 uint8) uint8 {
+	newPixel := pixel1 + pixel2
+
+	maxPixel := getMaxNum(pixel1, pixel2)
+
+	if newPixel > 255 || newPixel < maxPixel {
+		newPixel = 255
+	}
+
+	return newPixel
+}
+
+func subtractPixels(pixel1 uint8, pixel2 uint8) uint8 {
+	var newPixel uint8
+
+	if pixel1 > pixel2 {
+		newPixel = pixel1 - pixel2
+	} else {
+		newPixel = pixel2 - pixel1
+	}
+
+	return newPixel
+}
+
+func operateOnTwoMatrixes(matrix1 [][][3]uint8, matrix2 [][][3]uint8, opPixelFunc func(pixel1 uint8, pixel2 uint8) uint8) [][][3]uint8 {
+	maxWidth := getMaxNum(len(matrix1), len(matrix2))
+	maxHeigth := getMaxNum(len(matrix1[0]), len(matrix2[0]))
+
+	newMatrix := [][][3]uint8{}
+
+	for x := 0; x < maxWidth; x++ {
+		newX := [][3]uint8{}
+
+		for y := 0; y < maxHeigth; y++ {
+			newY := [3]uint8{}
+
+			for j := 0; j < 3; j++ {
+				newY[j] = opPixelFunc(matrix1[x][y][j], matrix2[x][y][j])
+			}
+
+			newX = append(newX, newY)
+		}
+
+		newMatrix = append(newMatrix, newX)
+	}
+
+	return newMatrix
+}
+
+func main() {
+	fmt.Println("oloco")
+
+	const MAIN_PATH = "C:\\Users\\inazu\\OneDrive\\Documentos\\Faculdade\\processamento_imagens\\Matlab\\"
+
+	matrixes, err := loadImgs([]string{
+		MAIN_PATH + "Add1.jpg",
+		MAIN_PATH + "Add2.jpg",
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], addPixels)
+
+	createImgFromMatrix(newMatrix)
+}
