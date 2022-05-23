@@ -28,7 +28,7 @@ func createImgFromMatrix(matrix [][][3]uint8) {
 		}
 	}
 
-	f, _ := os.Create("image.png")
+	f, _ := os.Create("img-ops-result.png")
 	png.Encode(f, img)
 	f.Close()
 }
@@ -152,7 +152,7 @@ func blendPixels(blendFactor float32, pixel1 uint8, pixel2 uint8) uint8 {
 	return uint8(newPixel)
 }
 
-func blendPixelsCurry(blendFactor float32) func(pixel1 uint8, pixel2 uint8) uint8 {
+func blendPixelsPartial(blendFactor float32) func(pixel1 uint8, pixel2 uint8) uint8 {
 	return func(pixel1, pixel2 uint8) uint8 {
 		return blendPixels(blendFactor, pixel1, pixel2)
 	}
@@ -208,7 +208,7 @@ func main() {
 		panic(err)
 	}
 
-	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], blendPixelsCurry(0.2))
+	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], blendPixelsPartial(0.2))
 
 	createImgFromMatrix(newMatrix)
 }
