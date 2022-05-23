@@ -16,7 +16,7 @@ import (
 	_ "golang.org/x/image/tiff"
 )
 
-func loadImg(filePath string) ([][][3]uint8, error) {
+func loadImg(filePath string) (*[][][3]uint8, error) {
 	imgFile, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -46,11 +46,11 @@ func loadImg(filePath string) ([][][3]uint8, error) {
 		RGBMatrix = append(RGBMatrix, newX)
 	}
 
-	return RGBMatrix, nil
+	return &RGBMatrix, nil
 }
 
-func loadImgs(paths []string) ([][][][3]uint8, error) {
-	matrixes := [][][][3]uint8{}
+func loadImgs(paths []string) ([]*[][][3]uint8, error) {
+	matrixes := []*[][][3]uint8{}
 
 	for i := 0; i < len(paths); i++ {
 		path := paths[i]
@@ -153,19 +153,19 @@ func xorPixels(pixel1 uint8, pixel2 uint8) uint8 {
 	return pixel1 ^ pixel2
 }
 
-func notPixels(matrix [][][3]uint8) [][][3]uint8 {
+func notPixels(matrix *[][][3]uint8) {
 	var maxRed uint8 = 0
 	var maxGreen uint8 = 0
 	var maxBlue uint8 = 0
 
-	width := len(matrix)
-	heigth := len(matrix[0])
+	width := len(*matrix)
+	heigth := len((*matrix)[0])
 
 	for x := 0; x < width; x++ {
 		for y := 0; y < heigth; y++ {
-			red := matrix[x][y][0]
-			green := matrix[x][y][1]
-			blue := matrix[x][y][2]
+			red := (*matrix)[x][y][0]
+			green := (*matrix)[x][y][1]
+			blue := (*matrix)[x][y][2]
 
 			if red > maxRed {
 				maxRed = red
@@ -183,22 +183,20 @@ func notPixels(matrix [][][3]uint8) [][][3]uint8 {
 
 	for x := 0; x < width; x++ {
 		for y := 0; y < heigth; y++ {
-			matrix[x][y][0] = maxRed - matrix[x][y][0]
-			matrix[x][y][1] = maxGreen - matrix[x][y][1]
-			matrix[x][y][2] = maxBlue - matrix[x][y][2]
+			(*matrix)[x][y][0] = maxRed - (*matrix)[x][y][0]
+			(*matrix)[x][y][1] = maxGreen - (*matrix)[x][y][1]
+			(*matrix)[x][y][2] = maxBlue - (*matrix)[x][y][2]
 		}
 	}
-
-	return matrix
 }
 
 func operateOnTwoMatrixes(
-	matrix1 [][][3]uint8,
-	matrix2 [][][3]uint8,
+	matrix1 *[][][3]uint8,
+	matrix2 *[][][3]uint8,
 	onPixel func(pixel1 uint8, pixel2 uint8) uint8,
 ) [][][3]uint8 {
-	maxWidth := getMaxNum(len(matrix1), len(matrix2))
-	maxHeigth := getMaxNum(len(matrix1[0]), len(matrix2[0]))
+	maxWidth := getMaxNum(len(*matrix1), len(*matrix2))
+	maxHeigth := getMaxNum(len((*matrix1)[0]), len((*matrix2)[0]))
 
 	newMatrix := [][][3]uint8{}
 
@@ -212,12 +210,12 @@ func operateOnTwoMatrixes(
 				var pixel1 uint8 = 0
 				var pixel2 uint8 = 0
 
-				if x < len(matrix1) && y < len(matrix1[0]) {
-					pixel1 = matrix1[x][y][j]
+				if x < len(*matrix1) && y < len((*matrix1)[0]) {
+					pixel1 = (*matrix1)[x][y][j]
 				}
 
-				if x < len(matrix2) && y < len(matrix2[0]) {
-					pixel2 = matrix2[x][y][j]
+				if x < len(*matrix2) && y < len((*matrix2)[0]) {
+					pixel2 = (*matrix2)[x][y][j]
 				}
 
 				newY[j] = onPixel(pixel1, pixel2)
@@ -232,9 +230,9 @@ func operateOnTwoMatrixes(
 	return newMatrix
 }
 
-func createImgFromMatrix(matrix [][][3]uint8) *image.NRGBA {
-	width := len(matrix)
-	height := len(matrix[0])
+func createImgFromMatrix(matrix *[][][3]uint8) *image.NRGBA {
+	width := len(*matrix)
+	height := len((*matrix)[0])
 
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{width, height}
@@ -243,7 +241,7 @@ func createImgFromMatrix(matrix [][][3]uint8) *image.NRGBA {
 
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
-			img.Set(x, y, color.RGBA{matrix[x][y][0], matrix[x][y][1], matrix[x][y][2], 255})
+			img.Set(x, y, color.RGBA{(*matrix)[x][y][0], (*matrix)[x][y][1], (*matrix)[x][y][2], 255})
 		}
 	}
 
@@ -272,7 +270,7 @@ func main() {
 				"<name of the first image between single quotes (obligatory)>\n" +
 				"<name of the second image between single quotes (optional only when operation is NOT)>\n" +
 				"<blend factor (obligatory only when opeartion is BLEND)>\n" +
-				"example: ./image-ops 'C:\\Users\\inazu\\OneDrive\\Documentos\\Faculdade\\processamento_imagens\\Matlab\\' ADD 'c-preto.png' 'q-preto.png'",
+				"example: ./img-ops.exe 'C:\\Users\\inazu\\OneDrive\\Documentos\\Faculdade\\processamento_imagens\\Matlab\\' ADD 'c-preto.png' 'q-preto.png'",
 		)
 		return
 	}
@@ -367,10 +365,12 @@ func main() {
 			return
 		}
 
-		newMatrix = notPixels(matrix)
+		notPixels(matrix)
+
+		newMatrix = *matrix
 	}
 
-	newImg := createImgFromMatrix(newMatrix)
+	newImg := createImgFromMatrix(&newMatrix)
 
 	fmt.Println("Completed!")
 
