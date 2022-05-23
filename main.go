@@ -158,7 +158,7 @@ func blendPixelsCurry(blendFactor float32) func(pixel1 uint8, pixel2 uint8) uint
 	}
 }
 
-func getMatrixMaxRGB(matrix [][][3]uint8) [3]uint8 {
+func notPixels(matrix [][][3]uint8) [][][3]uint8 {
 	var maxRed uint8 = 0
 	var maxGreen uint8 = 0
 	var maxBlue uint8 = 0
@@ -186,26 +186,26 @@ func getMatrixMaxRGB(matrix [][][3]uint8) [3]uint8 {
 		}
 	}
 
-	return [3]uint8{maxRed, maxGreen, maxBlue}
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			matrix[x][y][0] = maxRed - matrix[x][y][0]
+			matrix[x][y][1] = maxGreen - matrix[x][y][1]
+			matrix[x][y][2] = maxBlue - matrix[x][y][2]
+		}
+	}
+
+	return matrix
 }
 
 func operateOnTwoMatrixes(
 	matrix1 [][][3]uint8,
 	matrix2 [][][3]uint8,
-	onRedPixel func(pixel1 uint8, pixel2 uint8) uint8,
-	onGreenPixel func(pixel1 uint8, pixel2 uint8) uint8,
-	onBluePixel func(pixel1 uint8, pixel2 uint8) uint8,
+	onPixel func(pixel1 uint8, pixel2 uint8) uint8,
 ) [][][3]uint8 {
 	maxWidth := getMaxNum(len(matrix1), len(matrix2))
 	maxHeigth := getMaxNum(len(matrix1[0]), len(matrix2[0]))
 
 	newMatrix := [][][3]uint8{}
-
-	functionsArr := []func(pixel1 uint8, pixel2 uint8) uint8{
-		onRedPixel,
-		onGreenPixel,
-		onBluePixel,
-	}
 
 	for x := 0; x < maxWidth; x++ {
 		newX := [][3]uint8{}
@@ -225,7 +225,7 @@ func operateOnTwoMatrixes(
 					pixel2 = matrix2[x][y][j]
 				}
 
-				newY[j] = functionsArr[j](pixel1, pixel2)
+				newY[j] = onPixel(pixel1, pixel2)
 			}
 
 			newX = append(newX, newY)
@@ -251,13 +251,7 @@ func main() {
 		panic(err)
 	}
 
-	newMatrix := operateOnTwoMatrixes(
-		matrixes[0],
-		matrixes[1],
-		blendPixelsCurry(0.2),
-		blendPixelsCurry(0.2),
-		blendPixelsCurry(0.2),
-	)
+	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], blendPixelsCurry(0.2))
 
 	createImgFromMatrix(newMatrix)
 }
