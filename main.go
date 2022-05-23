@@ -2,18 +2,15 @@ package main
 
 import (
 	"fmt"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 	"image"
 	"image/color"
 	_ "image/jpeg"
-	_ "image/png"
+	"image/png"
 	"os"
+	"os/exec"
 	"strconv"
-
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/canvas"
-	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/tiff"
 )
 
 func loadImg(filePath string) (*[][][3]uint8, error) {
@@ -248,15 +245,24 @@ func createImgFromMatrix(matrix *[][][3]uint8) *image.NRGBA {
 	return img
 }
 
-func showImg(img *image.NRGBA) {
-	a := app.New()
-	w := a.NewWindow("result")
+func saveImg(imgFolder string, img *image.NRGBA) {
+	imgPath := imgFolder + "img-ops-result.png"
 
-	canvasImg := canvas.NewImageFromImage(img)
-	w.SetContent(canvasImg)
-	w.Resize(fyne.NewSize(640, 480))
+	f, _ := os.Create(imgPath)
 
-	w.ShowAndRun()
+	png.Encode(f, img)
+
+	err := f.Close()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("Saved new image to " + imgPath)
+
+	cmd := exec.Command("C:\\Windows\\explorer.exe", imgPath)
+
+	cmd.Output()
 }
 
 func main() {
@@ -374,5 +380,5 @@ func main() {
 
 	fmt.Println("Completed!")
 
-	showImg(newImg)
+	saveImg(imgFolder, newImg)
 }
