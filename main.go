@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 	"image"
 	"image/color"
 	_ "image/jpeg"
@@ -133,7 +135,18 @@ func operateOnTwoMatrixes(matrix1 [][][3]uint8, matrix2 [][][3]uint8, opPixelFun
 			newY := [3]uint8{}
 
 			for j := 0; j < 3; j++ {
-				newY[j] = opPixelFunc(matrix1[x][y][j], matrix2[x][y][j])
+				var pixel1 uint8 = 0
+				var pixel2 uint8 = 0
+
+				if x < len(matrix1) && y < len(matrix1[0]) {
+					pixel1 = matrix1[x][y][j]
+				}
+
+				if x < len(matrix2) && y < len(matrix2[0]) {
+					pixel2 = matrix2[x][y][j]
+				}
+
+				newY[j] = opPixelFunc(pixel1, pixel2)
 			}
 
 			newX = append(newX, newY)
@@ -151,15 +164,15 @@ func main() {
 	const MAIN_PATH = "C:\\Users\\inazu\\OneDrive\\Documentos\\Faculdade\\processamento_imagens\\Matlab\\"
 
 	matrixes, err := loadImgs([]string{
+		MAIN_PATH + "blend1.tif",
 		MAIN_PATH + "Add1.jpg",
-		MAIN_PATH + "Add2.jpg",
 	})
 
 	if err != nil {
 		panic(err)
 	}
 
-	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], addPixels)
+	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], subtractPixels)
 
 	createImgFromMatrix(newMatrix)
 }
