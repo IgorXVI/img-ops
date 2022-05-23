@@ -2,36 +2,17 @@ package main
 
 import (
 	"fmt"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
 	"image"
 	"image/color"
 	_ "image/jpeg"
-	"image/png"
+	_ "image/png"
 	"os"
 )
-
-func createImgFromMatrix(matrix [][][3]uint8) {
-	width := len(matrix)
-	height := len(matrix[0])
-
-	fmt.Printf("w: %v, h: %v", width, height)
-
-	upLeft := image.Point{0, 0}
-	lowRight := image.Point{width, height}
-
-	img := image.NewNRGBA(image.Rectangle{upLeft, lowRight})
-
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
-			img.Set(x, y, color.RGBA{matrix[x][y][0], matrix[x][y][1], matrix[x][y][2], 255})
-		}
-	}
-
-	f, _ := os.Create("img-ops-result.png")
-	png.Encode(f, img)
-	f.Close()
-}
 
 func loadImg(filePath string) ([][][3]uint8, error) {
 	imgFile, err := os.Open(filePath)
@@ -249,21 +230,123 @@ func operateOnTwoMatrixes(
 	return newMatrix
 }
 
-func main() {
-	fmt.Println("oloco")
+func createImgFromMatrix(matrix [][][3]uint8) *image.NRGBA {
+	width := len(matrix)
+	height := len(matrix[0])
 
-	const MAIN_PATH = "C:\\Users\\inazu\\OneDrive\\Documentos\\Faculdade\\processamento_imagens\\Matlab\\"
+	upLeft := image.Point{0, 0}
+	lowRight := image.Point{width, height}
 
-	matrixes, err := loadImgs([]string{
-		MAIN_PATH + "q-preto.png",
-		MAIN_PATH + "c-preto.png",
-	})
+	img := image.NewNRGBA(image.Rectangle{upLeft, lowRight})
 
-	if err != nil {
-		panic(err)
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			img.Set(x, y, color.RGBA{matrix[x][y][0], matrix[x][y][1], matrix[x][y][2], 255})
+		}
 	}
 
-	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], xorPixels)
+	return img
+}
 
-	createImgFromMatrix(newMatrix)
+func showImg(img *image.NRGBA) {
+	a := app.New()
+	w := a.NewWindow("result")
+
+	canvasImg := canvas.NewImageFromImage(img)
+	w.SetContent(canvasImg)
+	w.Resize(fyne.NewSize(640, 480))
+
+	w.ShowAndRun()
+}
+
+func main() {
+	//C:\Users\inazu\OneDrive\Documentos\Faculdade\processamento_imagens\Matlab\c-preto.png
+
+	fmt.Println("Running...")
+
+	validOperations := map[string]bool{
+		"ADD":   true,
+		"SUB":   true,
+		"MULT":  true,
+		"DIV":   true,
+		"AVG":   true,
+		"BLEND": true,
+		"AND":   true,
+		"OR":    true,
+		"XOR":   true,
+		"NOT":   true,
+	}
+
+	functionOperationsMap := map[string]func(pixel1 uint8, pixel2 uint8) uint8{
+		"ADD":  addPixels,
+		"SUB":  subtractPixels,
+		"MULT": multiplyPixels,
+		"DIV":  dividePixels,
+		"AVG":  avgPixels,
+		"AND":  andPixels,
+		"OR":   orPixels,
+		"XOR":  xorPixels,
+	}
+
+	var operation string
+
+	fmt.Print("Inform the operation (ADD, SUB, MULT, DIV, AVG, BLEND, AND, OR, XOR, NOT): ")
+	fmt.Scanln(&operation)
+
+	var newMatrix [][][3]uint8
+
+	if !validOperations[operation] {
+		fmt.Println("Invalid operation!")
+		return
+	} else if operation != "NOT" {
+		var imgPath1 string
+		var imgPath2 string
+
+		fmt.Print("Inform the path of the first image: ")
+		fmt.Scanln(&imgPath1)
+
+		fmt.Print("Inform the path of the second image: ")
+		fmt.Scanln(&imgPath2)
+
+		matrixes, err := loadImgs([]string{
+			imgPath1,
+			imgPath2,
+		})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		var opFunc func(pixel1 uint8, pixel2 uint8) uint8
+
+		if operation == "BLEND" {
+			var blendFactor float32
+
+			fmt.Print("Inform the blend factor: ")
+			fmt.Scanln(&blendFactor)
+
+			opFunc = blendPixelsCurry(blendFactor)
+		} else {
+			opFunc = functionOperationsMap[operation]
+		}
+
+		newMatrix = operateOnTwoMatrixes(matrixes[0], matrixes[1], opFunc)
+	} else {
+		var imgPath string
+
+		fmt.Print("Inform the path of the image: ")
+		fmt.Scanln(&imgPath)
+
+		matrix, err := loadImg(imgPath)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		newMatrix = notPixels(matrix)
+	}
+
+	newImg := createImgFromMatrix(newMatrix)
+
+	showImg(newImg)
 }
