@@ -2,16 +2,18 @@ package main
 
 import (
 	"fmt"
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/canvas"
-	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/tiff"
 	"image"
 	"image/color"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"strconv"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 )
 
 func loadImg(filePath string) ([][][3]uint8, error) {
@@ -260,9 +262,25 @@ func showImg(img *image.NRGBA) {
 }
 
 func main() {
-	//C:\Users\inazu\OneDrive\Documentos\Faculdade\processamento_imagens\Matlab\c-preto.png
-
 	fmt.Println("Running...")
+
+	if len(os.Args) < 2 {
+		fmt.Println(
+			"inform the args in the following order separated by 1 space:\n" +
+				"<path of the image folder between single quotes (obligatory)>\n" +
+				"<operation: ADD, SUB, MULT, DIV, AVG, BLEND, AND, OR, XOR, NOT (obligatory)>\n" +
+				"<name of the first image between single quotes (obligatory)>\n" +
+				"<name of the second image between single quotes (optional only when operation is NOT)>\n" +
+				"<blend factor (obligatory only when opeartion is BLEND)>\n" +
+				"example: ./image-ops 'C:\\Users\\inazu\\OneDrive\\Documentos\\Faculdade\\processamento_imagens\\Matlab\\' ADD 'c-preto.png' 'q-preto.png'",
+		)
+		return
+	}
+
+	if len(os.Args) < 3 {
+		fmt.Println("Not enough args!")
+		return
+	}
 
 	validOperations := map[string]bool{
 		"ADD":   true,
@@ -288,10 +306,9 @@ func main() {
 		"XOR":  xorPixels,
 	}
 
-	var operation string
+	imgFolder := os.Args[1]
 
-	fmt.Print("Inform the operation (ADD, SUB, MULT, DIV, AVG, BLEND, AND, OR, XOR, NOT): ")
-	fmt.Scanln(&operation)
+	operation := os.Args[2]
 
 	var newMatrix [][][3]uint8
 
@@ -299,14 +316,13 @@ func main() {
 		fmt.Println("Invalid operation!")
 		return
 	} else if operation != "NOT" {
-		var imgPath1 string
-		var imgPath2 string
+		if len(os.Args) < 5 {
+			fmt.Println("Not enough args!")
+			return
+		}
 
-		fmt.Print("Inform the path of the first image: ")
-		fmt.Scanln(&imgPath1)
-
-		fmt.Print("Inform the path of the second image: ")
-		fmt.Scanln(&imgPath2)
+		imgPath1 := imgFolder + os.Args[3]
+		imgPath2 := imgFolder + os.Args[4]
 
 		matrixes, err := loadImgs([]string{
 			imgPath1,
@@ -320,22 +336,30 @@ func main() {
 		var opFunc func(pixel1 uint8, pixel2 uint8) uint8
 
 		if operation == "BLEND" {
-			var blendFactor float32
+			if len(os.Args) < 6 {
+				fmt.Println("Not enough args!")
+				return
+			}
 
-			fmt.Print("Inform the blend factor: ")
-			fmt.Scanln(&blendFactor)
+			blendFactor, err := strconv.ParseFloat(os.Args[5], 32)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 
-			opFunc = blendPixelsCurry(blendFactor)
+			opFunc = blendPixelsCurry(float32(blendFactor))
 		} else {
 			opFunc = functionOperationsMap[operation]
 		}
 
 		newMatrix = operateOnTwoMatrixes(matrixes[0], matrixes[1], opFunc)
 	} else {
-		var imgPath string
+		if len(os.Args) < 4 {
+			fmt.Println("Not enough args!")
+			return
+		}
 
-		fmt.Print("Inform the path of the image: ")
-		fmt.Scanln(&imgPath)
+		imgPath := imgFolder + os.Args[3]
 
 		matrix, err := loadImg(imgPath)
 		if err != nil {
@@ -347,6 +371,8 @@ func main() {
 	}
 
 	newImg := createImgFromMatrix(newMatrix)
+
+	fmt.Println("Completed!")
 
 	showImg(newImg)
 }
