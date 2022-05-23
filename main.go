@@ -158,6 +158,18 @@ func blendPixelsCurry(blendFactor float32) func(pixel1 uint8, pixel2 uint8) uint
 	}
 }
 
+func andPixels(pixel1 uint8, pixel2 uint8) uint8 {
+	return pixel1 & pixel2
+}
+
+func orPixels(pixel1 uint8, pixel2 uint8) uint8 {
+	return pixel1 | pixel2
+}
+
+func xorPixels(pixel1 uint8, pixel2 uint8) uint8 {
+	return pixel1 ^ pixel2
+}
+
 func notPixels(matrix [][][3]uint8) [][][3]uint8 {
 	var maxRed uint8 = 0
 	var maxGreen uint8 = 0
@@ -243,15 +255,15 @@ func main() {
 	const MAIN_PATH = "C:\\Users\\inazu\\OneDrive\\Documentos\\Faculdade\\processamento_imagens\\Matlab\\"
 
 	matrixes, err := loadImgs([]string{
-		MAIN_PATH + "blend1.tif",
-		MAIN_PATH + "blend2.tif",
+		MAIN_PATH + "q-preto.png",
+		MAIN_PATH + "c-preto.png",
 	})
 
 	if err != nil {
 		panic(err)
 	}
 
-	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], blendPixelsCurry(0.2))
+	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], xorPixels)
 
 	createImgFromMatrix(newMatrix)
 }
