@@ -122,6 +122,42 @@ func subtractPixels(pixel1 uint8, pixel2 uint8) uint8 {
 	return newPixel
 }
 
+func multiplyPixels(pixel1 uint8, pixel2 uint8) uint8 {
+	var newPixel float32 = float32(pixel1) * float32(pixel2)
+
+	return uint8(newPixel / 255)
+}
+
+func dividePixels(pixel1 uint8, pixel2 uint8) uint8 {
+	var newPixel float32
+
+	if pixel1 > pixel2 {
+		newPixel = float32(pixel2) / float32(pixel1)
+	} else {
+		newPixel = float32(pixel1) / float32(pixel2)
+	}
+
+	return uint8(newPixel * 255)
+}
+
+func avgPixels(pixel1 uint8, pixel2 uint8) uint8 {
+	var newPixel float32 = (float32(pixel1) + float32(pixel2)) / 2
+
+	return uint8(newPixel)
+}
+
+func blendPixels(blendFactor float32, pixel1 uint8, pixel2 uint8) uint8 {
+	var newPixel float32 = blendFactor*float32(pixel1) + (1-blendFactor)*float32(pixel2)
+
+	return uint8(newPixel)
+}
+
+func blendPixelsCurry(blendFactor float32) func(pixel1 uint8, pixel2 uint8) uint8 {
+	return func(pixel1, pixel2 uint8) uint8 {
+		return blendPixels(blendFactor, pixel1, pixel2)
+	}
+}
+
 func operateOnTwoMatrixes(matrix1 [][][3]uint8, matrix2 [][][3]uint8, opPixelFunc func(pixel1 uint8, pixel2 uint8) uint8) [][][3]uint8 {
 	maxWidth := getMaxNum(len(matrix1), len(matrix2))
 	maxHeigth := getMaxNum(len(matrix1[0]), len(matrix2[0]))
@@ -165,14 +201,14 @@ func main() {
 
 	matrixes, err := loadImgs([]string{
 		MAIN_PATH + "blend1.tif",
-		MAIN_PATH + "Add1.jpg",
+		MAIN_PATH + "blend2.tif",
 	})
 
 	if err != nil {
 		panic(err)
 	}
 
-	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], subtractPixels)
+	newMatrix := operateOnTwoMatrixes(matrixes[0], matrixes[1], blendPixelsCurry(0.2))
 
 	createImgFromMatrix(newMatrix)
 }
