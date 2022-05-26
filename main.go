@@ -1,17 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
 	"image"
 	"image/color"
 	_ "image/jpeg"
 	"image/png"
+	"net/http"
 	"os"
-	"os/exec"
-	"strconv"
-	// g "github.com/AllenDang/giu"
 )
 
 func loadImg(filePath string) (*[][][3]uint8, error) {
@@ -224,143 +224,75 @@ func createImgFromMatrix(matrix *[][][3]uint8) *image.NRGBA {
 	return img
 }
 
-func saveImg(imgFolder string, img *image.NRGBA) {
-	imgPath := imgFolder + "img-ops-result.png"
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
 
-	f, _ := os.Create(imgPath)
+const FILE_FOLDER string = "./imgs/"
 
-	png.Encode(f, img)
+func sendInputError(context *gin.Context, err error) {
+	errMessage := err.Error()
 
-	err := f.Close()
+	fmt.Printf("An error ocurred: %v\n", errMessage)
+
+	errorResponse := ErrorResponse{
+		Message: errMessage,
+	}
+
+	context.JSON(http.StatusBadRequest, errorResponse)
+}
+
+func postImgFile(context *gin.Context) {
+	file, err := context.FormFile("img")
 	if err != nil {
-		fmt.Println(err)
+		sendInputError(context, err)
 		return
 	}
 
-	fmt.Println("Saved new image to " + imgPath)
+	err = context.SaveUploadedFile(file, FILE_FOLDER+file.Filename)
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
 
-	cmd := exec.Command("C:\\Windows\\explorer.exe", imgPath)
+	context.Status(http.StatusOK)
+}
 
-	cmd.Output()
+func getImg(context *gin.Context) {
+	fileName1 := context.Param("fileName1")
+	fileName2 := context.Param("fileName2")
+
+	matrix1, err := loadImg(FILE_FOLDER + fileName1)
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
+
+	matrix2, err := loadImg(FILE_FOLDER + fileName2)
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
+
+	newMatrix := operateOnTwoMatrixes(matrix1, matrix2, addPixels)
+
+	img := createImgFromMatrix(&newMatrix)
+
+	buf := new(bytes.Buffer)
+
+	png.Encode(buf, img)
+
+	context.Data(http.StatusOK, "image/png", buf.Bytes())
 }
 
 func main() {
 	fmt.Println("Running...")
 
-	if len(os.Args) < 2 {
-		fmt.Println(
-			"inform the args in the following order separated by 1 space:\n" +
-				"<path of the image folder between single quotes (obligatory)>\n" +
-				"<operation: ADD, SUB, MULT, DIV, AVG, BLEND, AND, OR, XOR, NOT (obligatory)>\n" +
-				"<name of the first image between single quotes (obligatory)>\n" +
-				"<name of the second image between single quotes (optional only when operation is NOT)>\n" +
-				"<blend factor (obligatory only when opeartion is BLEND)>\n" +
-				"example: ./img-ops.exe 'C:\\Users\\inazu\\OneDrive\\Documentos\\Faculdade\\processamento_imagens\\Matlab\\' ADD 'c-preto.png' 'q-preto.png'",
-		)
-		return
-	}
+	router := gin.Default()
 
-	if len(os.Args) < 3 {
-		fmt.Println("Not enough args!")
-		return
-	}
+	router.POST("/img", postImgFile)
 
-	validOperations := map[string]bool{
-		"ADD":   true,
-		"SUB":   true,
-		"MULT":  true,
-		"DIV":   true,
-		"AVG":   true,
-		"BLEND": true,
-		"AND":   true,
-		"OR":    true,
-		"XOR":   true,
-		"NOT":   true,
-	}
+	router.GET("/img/:fileName1/:fileName2", getImg)
 
-	functionOperationsMap := map[string]func(pixel1 uint8, pixel2 uint8) uint8{
-		"ADD":  addPixels,
-		"SUB":  subtractPixels,
-		"MULT": multiplyPixels,
-		"DIV":  dividePixels,
-		"AVG":  avgPixels,
-		"AND":  andPixels,
-		"OR":   orPixels,
-		"XOR":  xorPixels,
-	}
-
-	imgFolder := os.Args[1]
-
-	operation := os.Args[2]
-
-	var newMatrix [][][3]uint8
-
-	if !validOperations[operation] {
-		fmt.Println("Invalid operation!")
-		return
-	} else if operation != "NOT" {
-		if len(os.Args) < 5 {
-			fmt.Println("Not enough args!")
-			return
-		}
-
-		imgPath1 := imgFolder + os.Args[3]
-		imgPath2 := imgFolder + os.Args[4]
-
-		matrix1, err := loadImg(imgPath1)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		matrix2, err := loadImg(imgPath2)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		var opFunc func(pixel1 uint8, pixel2 uint8) uint8
-
-		if operation == "BLEND" {
-			if len(os.Args) < 6 {
-				fmt.Println("Not enough args!")
-				return
-			}
-
-			blendFactor, err := strconv.ParseFloat(os.Args[5], 32)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			opFunc = blendPixelsCurry(float32(blendFactor))
-		} else {
-			opFunc = functionOperationsMap[operation]
-		}
-
-		newMatrix = operateOnTwoMatrixes(matrix1, matrix2, opFunc)
-	} else {
-		if len(os.Args) < 4 {
-			fmt.Println("Not enough args!")
-			return
-		}
-
-		imgPath := imgFolder + os.Args[3]
-
-		matrix, err := loadImg(imgPath)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		notPixels(matrix)
-
-		newMatrix = *matrix
-	}
-
-	newImg := createImgFromMatrix(&newMatrix)
-
-	fmt.Println("Completed!")
-
-	saveImg(imgFolder, newImg)
+	router.Run("localhost:9090")
 }
