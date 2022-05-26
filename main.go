@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	// g "github.com/AllenDang/giu"
 )
 
 func loadImg(filePath string) (*[][][3]uint8, error) {
@@ -46,29 +47,7 @@ func loadImg(filePath string) (*[][][3]uint8, error) {
 	return &RGBMatrix, nil
 }
 
-func loadImgs(paths []string) ([]*[][][3]uint8, error) {
-	matrixes := []*[][][3]uint8{}
-
-	for i := 0; i < len(paths); i++ {
-		path := paths[i]
-
-		matrix, err := loadImg(path)
-
-		if err != nil {
-			return nil, err
-		}
-
-		matrixes = append(matrixes, matrix)
-	}
-
-	return matrixes, nil
-}
-
-type AnyInteger interface {
-	int | uint8
-}
-
-func getMaxNum[T AnyInteger](num1 T, num2 T) T {
+func getMaxNum[T int | uint8](num1 T, num2 T) T {
 	var greatestNum T = 0
 	if num1 > num2 {
 		greatestNum = num1
@@ -328,10 +307,13 @@ func main() {
 		imgPath1 := imgFolder + os.Args[3]
 		imgPath2 := imgFolder + os.Args[4]
 
-		matrixes, err := loadImgs([]string{
-			imgPath1,
-			imgPath2,
-		})
+		matrix1, err := loadImg(imgPath1)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		matrix2, err := loadImg(imgPath2)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -356,7 +338,7 @@ func main() {
 			opFunc = functionOperationsMap[operation]
 		}
 
-		newMatrix = operateOnTwoMatrixes(matrixes[0], matrixes[1], opFunc)
+		newMatrix = operateOnTwoMatrixes(matrix1, matrix2, opFunc)
 	} else {
 		if len(os.Args) < 4 {
 			fmt.Println("Not enough args!")
