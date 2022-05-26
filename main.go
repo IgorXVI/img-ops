@@ -377,25 +377,25 @@ func main() {
 
 	router.POST("/img", postImgFile)
 
-	router.GET("/process-img/:imgName1/:imgName2/add", getAdd)
+	router.GET("/process-img/add/:imgName1/:imgName2", getAdd)
 
-	router.GET("/process-img/:imgName1/:imgName2/subtract", getSubtract)
+	router.GET("/process-img/subtract/:imgName1/:imgName2", getSubtract)
 
-	router.GET("/process-img/:imgName1/:imgName2/multiply", getMultiply)
+	router.GET("/process-img/multiply/:imgName1/:imgName2", getMultiply)
 
-	router.GET("/process-img/:imgName1/:imgName2/divide", getDivide)
+	router.GET("/process-img/divide/:imgName1/:imgName2", getDivide)
 
-	router.GET("/process-img/:imgName1/:imgName2/avg", getAvg)
+	router.GET("/process-img/avg/:imgName1/:imgName2", getAvg)
 
-	router.GET("/process-img/:imgName1/:imgName2/blend/:blendFactor", getBlend)
+	router.GET("/process-img/blend/:imgName1/:imgName2/:blendFactor", getBlend)
 
-	router.GET("/process-img/:imgName1/:imgName2/and", getAnd)
+	router.GET("/process-img/and/:imgName1/:imgName2", getAnd)
 
-	router.GET("/process-img/:imgName1/:imgName2/or", getOr)
+	router.GET("/process-img/or/:imgName1/:imgName2", getOr)
 
-	router.GET("/process-img/:imgName1/:imgName2/xor", getXor)
+	router.GET("/process-img/xor/:imgName1/:imgName2", getXor)
 
-	router.GET("/process-img/:imgName1/not", getNot)
+	router.GET("/process-img/not/:imgName1", getNot)
 
 	router.Run("localhost:9090")
 }
