@@ -221,6 +221,20 @@ func sendInputError(context *gin.Context, err error) {
 	context.JSON(http.StatusBadRequest, errorResponse)
 }
 
+func sendMatrixAsImg(context *gin.Context, matrix *[][][3]uint8) {
+	img := createImgFromMatrix(matrix)
+
+	buf := new(bytes.Buffer)
+
+	err := png.Encode(buf, img)
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
+
+	context.Data(http.StatusOK, "image/png", buf.Bytes())
+}
+
 func loadImgFromParams(context *gin.Context, name string) (*[][][3]uint8, error) {
 	multipartFile, _, err := context.Request.FormFile(name)
 	if err != nil {
@@ -235,18 +249,17 @@ func loadImgFromParams(context *gin.Context, name string) (*[][][3]uint8, error)
 	return matrix, nil
 }
 
-func sendMatrixAsImg(context *gin.Context, matrix *[][][3]uint8) {
-	img := createImgFromMatrix(matrix)
+func getFactorFromParams(context *gin.Context) (float32, error) {
+	factorStr := context.Param("factor")
 
-	buf := new(bytes.Buffer)
-
-	err := png.Encode(buf, img)
+	factor64, err := strconv.ParseFloat(factorStr, 32)
 	if err != nil {
-		sendInputError(context, err)
-		return
+		return 0, err
 	}
 
-	context.Data(http.StatusOK, "image/png", buf.Bytes())
+	factor := float32(factor64)
+
+	return factor, nil
 }
 
 func handleTwoImages(context *gin.Context, pixelOperation func(pixel1 uint8, pixel2 uint8) uint8) {
@@ -265,19 +278,6 @@ func handleTwoImages(context *gin.Context, pixelOperation func(pixel1 uint8, pix
 	newMatrix := operateOnTwoMatrixes(matrix1, matrix2, pixelOperation)
 
 	sendMatrixAsImg(context, &newMatrix)
-}
-
-func getFactorFromParams(context *gin.Context) (float32, error) {
-	factorStr := context.Param("factor")
-
-	factor64, err := strconv.ParseFloat(factorStr, 32)
-	if err != nil {
-		return 0, err
-	}
-
-	factor := float32(factor64)
-
-	return factor, nil
 }
 
 func handleOneImage(context *gin.Context, pixelOperation func(pixel uint8) uint8) {
