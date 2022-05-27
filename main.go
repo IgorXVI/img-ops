@@ -103,6 +103,45 @@ func convertMatrixToGrayscale(matrix *[][][3]uint8) {
 	}
 }
 
+func convertMatrixToBinary(matrix *[][][3]uint8) {
+	width := len(*matrix)
+	heigth := len((*matrix)[0])
+
+	pixelTotalSum := 0
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			grayValueFloat32 := (float32((*matrix)[x][y][0]) + float32((*matrix)[x][y][1]) + float32((*matrix)[x][y][2])) / 3
+
+			grayValue := uint8(grayValueFloat32)
+
+			pixelTotalSum += int(grayValue)
+
+			(*matrix)[x][y][0] = grayValue
+			(*matrix)[x][y][1] = grayValue
+			(*matrix)[x][y][2] = grayValue
+		}
+	}
+
+	threshold := uint8(pixelTotalSum / (width * heigth))
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			pixelValue := (*matrix)[x][y][0]
+
+			var newPixelValue uint8 = 0
+
+			if pixelValue <= threshold {
+				newPixelValue = 255
+			}
+
+			(*matrix)[x][y][0] = newPixelValue
+			(*matrix)[x][y][1] = newPixelValue
+			(*matrix)[x][y][2] = newPixelValue
+		}
+	}
+}
+
 func operateOnMatrix(
 	matrix *[][][3]uint8,
 	onPixel func(pixel uint8) uint8,
@@ -384,6 +423,18 @@ func main() {
 		}
 
 		convertMatrixToGrayscale(matrix)
+
+		sendMatrixAsImg(context, matrix)
+	})
+
+	router.POST("/process-img/binary", func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		convertMatrixToBinary(matrix)
 
 		sendMatrixAsImg(context, matrix)
 	})
