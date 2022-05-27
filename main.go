@@ -52,22 +52,20 @@ func subtractPixels(pixel1 uint8, pixel2 uint8) uint8 {
 	return newPixel
 }
 
-func multiplyPixels(pixel1 uint8, pixel2 uint8) uint8 {
-	var newPixel float32 = float32(pixel1) * float32(pixel2)
+func multiplyPixel(factor float32, pixel uint8) uint8 {
+	newPixel := factor * float32(pixel)
 
-	return uint8(newPixel / 255)
-}
-
-func dividePixels(pixel1 uint8, pixel2 uint8) uint8 {
-	var newPixel float32
-
-	if pixel1 > pixel2 {
-		newPixel = float32(pixel2) / float32(pixel1)
-	} else {
-		newPixel = float32(pixel1) / float32(pixel2)
+	if newPixel > 255 {
+		newPixel = 255
 	}
 
-	return uint8(newPixel * 255)
+	return uint8(newPixel)
+}
+
+func dividePixel(factor float32, pixel uint8) uint8 {
+	newPixel := multiplyPixel(1/factor, pixel)
+
+	return uint8(newPixel)
 }
 
 func avgPixels(pixel1 uint8, pixel2 uint8) uint8 {
@@ -76,16 +74,10 @@ func avgPixels(pixel1 uint8, pixel2 uint8) uint8 {
 	return uint8(newPixel)
 }
 
-func blendPixels(blendFactor float32, pixel1 uint8, pixel2 uint8) uint8 {
-	var newPixel float32 = blendFactor*float32(pixel1) + (1-blendFactor)*float32(pixel2)
+func blendPixels(factor float32, pixel1 uint8, pixel2 uint8) uint8 {
+	var newPixel float32 = factor*float32(pixel1) + (1-factor)*float32(pixel2)
 
 	return uint8(newPixel)
-}
-
-func blendPixelsCurry(blendFactor float32) func(pixel1 uint8, pixel2 uint8) uint8 {
-	return func(pixel1, pixel2 uint8) uint8 {
-		return blendPixels(blendFactor, pixel1, pixel2)
-	}
 }
 
 func andPixels(pixel1 uint8, pixel2 uint8) uint8 {
@@ -100,39 +92,18 @@ func xorPixels(pixel1 uint8, pixel2 uint8) uint8 {
 	return pixel1 ^ pixel2
 }
 
-func notPixels(matrix *[][][3]uint8) {
-	var maxRed uint8 = 0
-	var maxGreen uint8 = 0
-	var maxBlue uint8 = 0
-
+func operateOnMatrix(
+	matrix *[][][3]uint8,
+	onPixel func(pixel uint8) uint8,
+) {
 	width := len(*matrix)
 	heigth := len((*matrix)[0])
 
 	for x := 0; x < width; x++ {
 		for y := 0; y < heigth; y++ {
-			red := (*matrix)[x][y][0]
-			green := (*matrix)[x][y][1]
-			blue := (*matrix)[x][y][2]
-
-			if red > maxRed {
-				maxRed = red
-			}
-
-			if green > maxGreen {
-				maxGreen = green
-			}
-
-			if blue > maxBlue {
-				maxBlue = blue
-			}
-		}
-	}
-
-	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
-			(*matrix)[x][y][0] = maxRed - (*matrix)[x][y][0]
-			(*matrix)[x][y][1] = maxGreen - (*matrix)[x][y][1]
-			(*matrix)[x][y][2] = maxBlue - (*matrix)[x][y][2]
+			(*matrix)[x][y][0] = onPixel((*matrix)[x][y][0])
+			(*matrix)[x][y][1] = onPixel((*matrix)[x][y][1])
+			(*matrix)[x][y][2] = onPixel((*matrix)[x][y][2])
 		}
 	}
 }
@@ -175,6 +146,26 @@ func operateOnTwoMatrixes(
 	}
 
 	return newMatrix
+}
+
+//curry pra poder usar mais facilmente
+
+func multiplyPixelCurry(factor float32) func(pixel uint8) uint8 {
+	return func(pixel uint8) uint8 {
+		return multiplyPixel(factor, pixel)
+	}
+}
+
+func dividePixelCurry(factor float32) func(pixel uint8) uint8 {
+	return func(pixel uint8) uint8 {
+		return dividePixel(factor, pixel)
+	}
+}
+
+func blendPixelsCurry(factor float32) func(pixel1 uint8, pixel2 uint8) uint8 {
+	return func(pixel1, pixel2 uint8) uint8 {
+		return blendPixels(factor, pixel1, pixel2)
+	}
 }
 
 //parte que lida com conversão de dados
@@ -270,7 +261,7 @@ func sendMatrixAsImg(context *gin.Context, matrix *[][][3]uint8) {
 	context.Data(http.StatusOK, "image/png", buf.Bytes())
 }
 
-func loadAndOperateOnTwoImages(context *gin.Context, pixelOperation func(pixel1 uint8, pixel2 uint8) uint8) {
+func handleTwoImages(context *gin.Context, pixelOperation func(pixel1 uint8, pixel2 uint8) uint8) {
 	matrix1, err := loadImgFromParams(context, "img1")
 	if err != nil {
 		sendInputError(context, err)
@@ -288,67 +279,92 @@ func loadAndOperateOnTwoImages(context *gin.Context, pixelOperation func(pixel1 
 	sendMatrixAsImg(context, &newMatrix)
 }
 
+func getFactorFromParams(context *gin.Context) (float32, error) {
+	factorStr := context.Param("factor")
+
+	factor64, err := strconv.ParseFloat(factorStr, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	factor := float32(factor64)
+
+	return factor, nil
+}
+
+func handleOneImage(context *gin.Context, pixelOperation func(pixel uint8) uint8) {
+	matrix, err := loadImgFromParams(context, "img")
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
+
+	operateOnMatrix(matrix, pixelOperation)
+
+	sendMatrixAsImg(context, matrix)
+}
+
 func main() {
 	fmt.Println("Running...")
 
 	router := gin.Default()
 
 	router.POST("/process-img/add", func(context *gin.Context) {
-		loadAndOperateOnTwoImages(context, addPixels)
+		handleTwoImages(context, addPixels)
 	})
 
 	router.POST("/process-img/subtract", func(context *gin.Context) {
-		loadAndOperateOnTwoImages(context, subtractPixels)
+		handleTwoImages(context, subtractPixels)
 	})
 
-	router.POST("/process-img/multiply", func(context *gin.Context) {
-		loadAndOperateOnTwoImages(context, multiplyPixels)
+	router.POST("/process-img/multiply/:factor", func(context *gin.Context) {
+		factor, err := getFactorFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		handleOneImage(context, multiplyPixelCurry(factor))
 	})
 
-	router.POST("/process-img/divide", func(context *gin.Context) {
-		loadAndOperateOnTwoImages(context, dividePixels)
+	router.POST("/process-img/divide/:factor", func(context *gin.Context) {
+		factor, err := getFactorFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		handleOneImage(context, dividePixelCurry(factor))
 	})
 
 	router.POST("/process-img/avg", func(context *gin.Context) {
-		loadAndOperateOnTwoImages(context, avgPixels)
+		handleTwoImages(context, avgPixels)
 	})
 
-	router.POST("/process-img/blend/:blendFactor", func(context *gin.Context) {
-		blendFactorStr := context.Param("blendFactor")
-
-		blendFactor64, err := strconv.ParseFloat(blendFactorStr, 32)
+	router.POST("/process-img/blend/:factor", func(context *gin.Context) {
+		factor, err := getFactorFromParams(context)
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		blendFactor := float32(blendFactor64)
-
-		loadAndOperateOnTwoImages(context, blendPixelsCurry(blendFactor))
+		handleTwoImages(context, blendPixelsCurry(factor))
 	})
 
 	router.POST("/process-img/and", func(context *gin.Context) {
-		loadAndOperateOnTwoImages(context, andPixels)
+		handleTwoImages(context, andPixels)
 	})
 
 	router.POST("/process-img/or", func(context *gin.Context) {
-		loadAndOperateOnTwoImages(context, orPixels)
+		handleTwoImages(context, orPixels)
 	})
 
 	router.POST("/process-img/xor", func(context *gin.Context) {
-		loadAndOperateOnTwoImages(context, xorPixels)
+		handleTwoImages(context, xorPixels)
 	})
 
 	router.POST("/process-img/not", func(context *gin.Context) {
-		matrix, err := loadImgFromParams(context, "img")
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		notPixels(matrix)
-
-		sendMatrixAsImg(context, matrix)
+		handleOneImage(context, multiplyPixelCurry(-1))
 	})
 
 	router.Run("localhost:9090")
