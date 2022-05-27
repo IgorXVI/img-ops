@@ -3,16 +3,17 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/tiff"
 	"image"
 	"image/color"
 	_ "image/jpeg"
 	"image/png"
+	"mime/multipart"
 	"net/http"
-	"os"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 )
 
 //parte que processa as images
@@ -178,14 +179,8 @@ func operateOnTwoMatrixes(
 
 //parte que lida com conversão de dados
 
-func loadImg(filePath string) (*[][][3]uint8, error) {
-	imgFile, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer imgFile.Close()
-
-	image, _, err := image.Decode(imgFile)
+func loadImg(multipartFile *multipart.File) (*[][][3]uint8, error) {
+	image, _, err := image.Decode(*multipartFile)
 	if err != nil {
 		return nil, err
 	}
@@ -235,8 +230,6 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-const FILE_FOLDER string = "./imgs/"
-
 func sendInputError(context *gin.Context, err error) {
 	errMessage := err.Error()
 
@@ -249,36 +242,13 @@ func sendInputError(context *gin.Context, err error) {
 	context.JSON(http.StatusBadRequest, errorResponse)
 }
 
-func postImgFile(context *gin.Context) {
-	file, err := context.FormFile("img")
+func loadImgFromParams(context *gin.Context, name string) (*[][][3]uint8, error) {
+	multipartFile, _, err := context.Request.FormFile(name)
 	if err != nil {
-		sendInputError(context, err)
-		return
+		return nil, err
 	}
 
-	err = context.SaveUploadedFile(file, FILE_FOLDER+file.Filename)
-	if err != nil {
-		sendInputError(context, err)
-		return
-	}
-
-	context.Status(http.StatusOK)
-}
-
-func sendMatrixAsImg(context *gin.Context, matrix *[][][3]uint8) {
-	img := createImgFromMatrix(matrix)
-
-	buf := new(bytes.Buffer)
-
-	png.Encode(buf, img)
-
-	context.Data(http.StatusOK, "image/png", buf.Bytes())
-}
-
-func loadImgFromParams(context *gin.Context, paramName string) (*[][][3]uint8, error) {
-	fileName := context.Param(paramName)
-
-	matrix, err := loadImg(FILE_FOLDER + fileName)
+	matrix, err := loadImg(&multipartFile)
 	if err != nil {
 		return nil, err
 	}
@@ -286,22 +256,28 @@ func loadImgFromParams(context *gin.Context, paramName string) (*[][][3]uint8, e
 	return matrix, nil
 }
 
-func loadTwoImgsFromParams(context *gin.Context) (*[][][3]uint8, *[][][3]uint8, error) {
-	matrix1, err := loadImgFromParams(context, "imgName1")
+func sendMatrixAsImg(context *gin.Context, matrix *[][][3]uint8) {
+	img := createImgFromMatrix(matrix)
+
+	buf := new(bytes.Buffer)
+
+	err := png.Encode(buf, img)
 	if err != nil {
-		return nil, nil, err
+		sendInputError(context, err)
+		return
 	}
 
-	matrix2, err := loadImgFromParams(context, "imgName2")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return matrix1, matrix2, nil
+	context.Data(http.StatusOK, "image/png", buf.Bytes())
 }
 
 func loadAndOperateOnTwoImages(context *gin.Context, pixelOperation func(pixel1 uint8, pixel2 uint8) uint8) {
-	matrix1, matrix2, err := loadTwoImgsFromParams(context)
+	matrix1, err := loadImgFromParams(context, "img1")
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
+
+	matrix2, err := loadImgFromParams(context, "img2")
 	if err != nil {
 		sendInputError(context, err)
 		return
@@ -312,90 +288,68 @@ func loadAndOperateOnTwoImages(context *gin.Context, pixelOperation func(pixel1 
 	sendMatrixAsImg(context, &newMatrix)
 }
 
-func getAdd(context *gin.Context) {
-	loadAndOperateOnTwoImages(context, addPixels)
-}
-
-func getSubtract(context *gin.Context) {
-	loadAndOperateOnTwoImages(context, subtractPixels)
-}
-
-func getMultiply(context *gin.Context) {
-	loadAndOperateOnTwoImages(context, multiplyPixels)
-}
-
-func getDivide(context *gin.Context) {
-	loadAndOperateOnTwoImages(context, dividePixels)
-}
-
-func getAvg(context *gin.Context) {
-	loadAndOperateOnTwoImages(context, avgPixels)
-}
-
-func getBlend(context *gin.Context) {
-	blendFactorStr := context.Param("blendFactor")
-
-	blendFactor64, err := strconv.ParseFloat(blendFactorStr, 32)
-	if err != nil {
-		sendInputError(context, err)
-		return
-	}
-
-	blendFactor := float32(blendFactor64)
-
-	loadAndOperateOnTwoImages(context, blendPixelsCurry(blendFactor))
-}
-
-func getAnd(context *gin.Context) {
-	loadAndOperateOnTwoImages(context, andPixels)
-}
-
-func getOr(context *gin.Context) {
-	loadAndOperateOnTwoImages(context, orPixels)
-}
-
-func getXor(context *gin.Context) {
-	loadAndOperateOnTwoImages(context, xorPixels)
-}
-
-func getNot(context *gin.Context) {
-	matrix, err := loadImgFromParams(context, "imgName1")
-	if err != nil {
-		sendInputError(context, err)
-		return
-	}
-
-	notPixels(matrix)
-
-	sendMatrixAsImg(context, matrix)
-}
-
 func main() {
 	fmt.Println("Running...")
 
 	router := gin.Default()
 
-	router.POST("/img", postImgFile)
+	router.POST("/process-img/add", func(context *gin.Context) {
+		loadAndOperateOnTwoImages(context, addPixels)
+	})
 
-	router.GET("/process-img/add/:imgName1/:imgName2", getAdd)
+	router.POST("/process-img/subtract", func(context *gin.Context) {
+		loadAndOperateOnTwoImages(context, subtractPixels)
+	})
 
-	router.GET("/process-img/subtract/:imgName1/:imgName2", getSubtract)
+	router.POST("/process-img/multiply", func(context *gin.Context) {
+		loadAndOperateOnTwoImages(context, multiplyPixels)
+	})
 
-	router.GET("/process-img/multiply/:imgName1/:imgName2", getMultiply)
+	router.POST("/process-img/divide", func(context *gin.Context) {
+		loadAndOperateOnTwoImages(context, dividePixels)
+	})
 
-	router.GET("/process-img/divide/:imgName1/:imgName2", getDivide)
+	router.POST("/process-img/avg", func(context *gin.Context) {
+		loadAndOperateOnTwoImages(context, avgPixels)
+	})
 
-	router.GET("/process-img/avg/:imgName1/:imgName2", getAvg)
+	router.POST("/process-img/blend/:blendFactor", func(context *gin.Context) {
+		blendFactorStr := context.Param("blendFactor")
 
-	router.GET("/process-img/blend/:imgName1/:imgName2/:blendFactor", getBlend)
+		blendFactor64, err := strconv.ParseFloat(blendFactorStr, 32)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
 
-	router.GET("/process-img/and/:imgName1/:imgName2", getAnd)
+		blendFactor := float32(blendFactor64)
 
-	router.GET("/process-img/or/:imgName1/:imgName2", getOr)
+		loadAndOperateOnTwoImages(context, blendPixelsCurry(blendFactor))
+	})
 
-	router.GET("/process-img/xor/:imgName1/:imgName2", getXor)
+	router.POST("/process-img/and", func(context *gin.Context) {
+		loadAndOperateOnTwoImages(context, andPixels)
+	})
 
-	router.GET("/process-img/not/:imgName1", getNot)
+	router.POST("/process-img/or", func(context *gin.Context) {
+		loadAndOperateOnTwoImages(context, orPixels)
+	})
+
+	router.POST("/process-img/xor", func(context *gin.Context) {
+		loadAndOperateOnTwoImages(context, xorPixels)
+	})
+
+	router.POST("/process-img/not", func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		notPixels(matrix)
+
+		sendMatrixAsImg(context, matrix)
+	})
 
 	router.Run("localhost:9090")
 }
