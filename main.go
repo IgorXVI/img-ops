@@ -86,6 +86,23 @@ func multiplyPixel(factor float32, pixel uint8) uint8 {
 	return uint8(newPixel)
 }
 
+func convertMatrixToGrayscale(matrix *[][][3]uint8) {
+	width := len(*matrix)
+	heigth := len((*matrix)[0])
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			grayValueFloat32 := (float32((*matrix)[x][y][0]) + float32((*matrix)[x][y][1]) + float32((*matrix)[x][y][2])) / 3
+
+			grayValue := uint8(grayValueFloat32)
+
+			(*matrix)[x][y][0] = grayValue
+			(*matrix)[x][y][1] = grayValue
+			(*matrix)[x][y][2] = grayValue
+		}
+	}
+}
+
 func operateOnMatrix(
 	matrix *[][][3]uint8,
 	onPixel func(pixel uint8) uint8,
@@ -357,6 +374,18 @@ func main() {
 
 	router.POST("/process-img/not", func(context *gin.Context) {
 		handleOneImage(context, multiplyPixelCurry(-1))
+	})
+
+	router.POST("/process-img/grayscale", func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		convertMatrixToGrayscale(matrix)
+
+		sendMatrixAsImg(context, matrix)
 	})
 
 	router.Run("localhost:9090")
