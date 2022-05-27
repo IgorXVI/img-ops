@@ -52,16 +52,6 @@ func subtractPixels(pixel1 uint8, pixel2 uint8) uint8 {
 	return newPixel
 }
 
-func multiplyPixel(factor float32, pixel uint8) uint8 {
-	newPixel := factor * float32(pixel)
-
-	if newPixel > 255 {
-		newPixel = 255
-	}
-
-	return uint8(newPixel)
-}
-
 func blendPixels(factor float32, pixel1 uint8, pixel2 uint8) uint8 {
 	var newPixel float32 = factor*float32(pixel1) + (1-factor)*float32(pixel2)
 
@@ -84,6 +74,16 @@ func orPixels(pixel1 uint8, pixel2 uint8) uint8 {
 
 func xorPixels(pixel1 uint8, pixel2 uint8) uint8 {
 	return pixel1 ^ pixel2
+}
+
+func multiplyPixel(factor float32, pixel uint8) uint8 {
+	newPixel := factor * float32(pixel)
+
+	if newPixel > 255 {
+		newPixel = 255
+	}
+
+	return uint8(newPixel)
 }
 
 func operateOnMatrix(
@@ -297,32 +297,14 @@ func main() {
 
 	router := gin.Default()
 
+	//lidar com duas imagens
+
 	router.POST("/process-img/add", func(context *gin.Context) {
 		handleTwoImages(context, addPixels)
 	})
 
 	router.POST("/process-img/subtract", func(context *gin.Context) {
 		handleTwoImages(context, subtractPixels)
-	})
-
-	router.POST("/process-img/multiply/:factor", func(context *gin.Context) {
-		factor, err := getFactorFromParams(context)
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		handleOneImage(context, multiplyPixelCurry(factor))
-	})
-
-	router.POST("/process-img/divide/:factor", func(context *gin.Context) {
-		factor, err := getFactorFromParams(context)
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		handleOneImage(context, multiplyPixelCurry(1/factor))
 	})
 
 	router.POST("/process-img/blend/:factor", func(context *gin.Context) {
@@ -349,6 +331,28 @@ func main() {
 
 	router.POST("/process-img/xor", func(context *gin.Context) {
 		handleTwoImages(context, xorPixels)
+	})
+
+	//lidar com uma imagem
+
+	router.POST("/process-img/multiply/:factor", func(context *gin.Context) {
+		factor, err := getFactorFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		handleOneImage(context, multiplyPixelCurry(factor))
+	})
+
+	router.POST("/process-img/divide/:factor", func(context *gin.Context) {
+		factor, err := getFactorFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		handleOneImage(context, multiplyPixelCurry(1/factor))
 	})
 
 	router.POST("/process-img/not", func(context *gin.Context) {
