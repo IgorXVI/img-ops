@@ -131,7 +131,7 @@ func convertMatrixToBinary(matrix *[][][3]uint8) {
 
 			var newPixelValue uint8 = 0
 
-			if pixelValue <= threshold {
+			if pixelValue >= threshold {
 				newPixelValue = 255
 			}
 
