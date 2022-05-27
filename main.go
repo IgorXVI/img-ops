@@ -68,14 +68,14 @@ func dividePixel(factor float32, pixel uint8) uint8 {
 	return uint8(newPixel)
 }
 
-func avgPixels(pixel1 uint8, pixel2 uint8) uint8 {
-	var newPixel float32 = (float32(pixel1) + float32(pixel2)) / 2
+func blendPixels(factor float32, pixel1 uint8, pixel2 uint8) uint8 {
+	var newPixel float32 = factor*float32(pixel1) + (1-factor)*float32(pixel2)
 
 	return uint8(newPixel)
 }
 
-func blendPixels(factor float32, pixel1 uint8, pixel2 uint8) uint8 {
-	var newPixel float32 = factor*float32(pixel1) + (1-factor)*float32(pixel2)
+func avgPixels(pixel1 uint8, pixel2 uint8) uint8 {
+	var newPixel float32 = (float32(pixel1) + float32(pixel2)) / 2
 
 	return uint8(newPixel)
 }
@@ -337,10 +337,6 @@ func main() {
 		handleOneImage(context, dividePixelCurry(factor))
 	})
 
-	router.POST("/process-img/avg", func(context *gin.Context) {
-		handleTwoImages(context, avgPixels)
-	})
-
 	router.POST("/process-img/blend/:factor", func(context *gin.Context) {
 		factor, err := getFactorFromParams(context)
 		if err != nil {
@@ -349,6 +345,10 @@ func main() {
 		}
 
 		handleTwoImages(context, blendPixelsCurry(factor))
+	})
+
+	router.POST("/process-img/avg", func(context *gin.Context) {
+		handleTwoImages(context, avgPixels)
 	})
 
 	router.POST("/process-img/and", func(context *gin.Context) {
