@@ -62,12 +62,6 @@ func multiplyPixel(factor float32, pixel uint8) uint8 {
 	return uint8(newPixel)
 }
 
-func dividePixel(factor float32, pixel uint8) uint8 {
-	newPixel := multiplyPixel(1/factor, pixel)
-
-	return uint8(newPixel)
-}
-
 func blendPixels(factor float32, pixel1 uint8, pixel2 uint8) uint8 {
 	var newPixel float32 = factor*float32(pixel1) + (1-factor)*float32(pixel2)
 
@@ -153,12 +147,6 @@ func operateOnTwoMatrixes(
 func multiplyPixelCurry(factor float32) func(pixel uint8) uint8 {
 	return func(pixel uint8) uint8 {
 		return multiplyPixel(factor, pixel)
-	}
-}
-
-func dividePixelCurry(factor float32) func(pixel uint8) uint8 {
-	return func(pixel uint8) uint8 {
-		return dividePixel(factor, pixel)
 	}
 }
 
@@ -334,7 +322,7 @@ func main() {
 			return
 		}
 
-		handleOneImage(context, dividePixelCurry(factor))
+		handleOneImage(context, multiplyPixelCurry(1/factor))
 	})
 
 	router.POST("/process-img/blend/:factor", func(context *gin.Context) {
