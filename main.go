@@ -348,16 +348,22 @@ func handleOneImage(context *gin.Context, pixelOperation func(pixel uint8) uint8
 	sendMatrixAsImg(context, matrix)
 }
 
-func CORSMiddleware(c *gin.Context) {
-	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-	c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+func CORSMiddleware(context *gin.Context) {
+	context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	context.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	context.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+	context.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
 
-	if c.Request.Method == "OPTIONS" {
-		c.AbortWithStatus(204)
+	if context.Request.Method == "OPTIONS" {
+		context.AbortWithStatus(204)
 		return
 	}
+
+	context.Next()
+}
+
+func maxBodySizeMiddleware(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 6000000)
 
 	c.Next()
 }
@@ -369,15 +375,15 @@ func main() {
 
 	//lidar com duas imagens
 
-	router.POST("/process-img/add", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/add", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		handleTwoImages(context, addPixels)
 	})
 
-	router.POST("/process-img/subtract", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/subtract", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		handleTwoImages(context, subtractPixels)
 	})
 
-	router.POST("/process-img/blend/:factor", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/blend/:factor", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		factor, err := getFactorFromParams(context)
 		if err != nil {
 			sendInputError(context, err)
@@ -387,25 +393,25 @@ func main() {
 		handleTwoImages(context, blendPixelsCurry(factor))
 	})
 
-	router.POST("/process-img/avg", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/avg", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		handleTwoImages(context, avgPixels)
 	})
 
-	router.POST("/process-img/and", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/and", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		handleTwoImages(context, andPixels)
 	})
 
-	router.POST("/process-img/or", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/or", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		handleTwoImages(context, orPixels)
 	})
 
-	router.POST("/process-img/xor", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/xor", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		handleTwoImages(context, xorPixels)
 	})
 
 	//lidar com uma imagem
 
-	router.POST("/process-img/multiply/:factor", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/multiply/:factor", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		factor, err := getFactorFromParams(context)
 		if err != nil {
 			sendInputError(context, err)
@@ -415,7 +421,7 @@ func main() {
 		handleOneImage(context, multiplyPixelCurry(factor))
 	})
 
-	router.POST("/process-img/divide/:factor", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/divide/:factor", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		factor, err := getFactorFromParams(context)
 		if err != nil {
 			sendInputError(context, err)
@@ -425,11 +431,11 @@ func main() {
 		handleOneImage(context, multiplyPixelCurry(1/factor))
 	})
 
-	router.POST("/process-img/not", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/not", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		handleOneImage(context, multiplyPixelCurry(-1))
 	})
 
-	router.POST("/process-img/grayscale", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/grayscale", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		matrix, err := loadImgFromParams(context, "img")
 		if err != nil {
 			sendInputError(context, err)
@@ -441,7 +447,7 @@ func main() {
 		sendMatrixAsImg(context, matrix)
 	})
 
-	router.POST("/process-img/binary", CORSMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/binary", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		matrix, err := loadImgFromParams(context, "img")
 		if err != nil {
 			sendInputError(context, err)
