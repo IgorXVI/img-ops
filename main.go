@@ -76,6 +76,46 @@ func xorPixels(pixel1 uint8, pixel2 uint8) uint8 {
 	return pixel1 ^ pixel2
 }
 
+func operateOnTwoMatrixes(
+	matrix1 *[][][3]uint8,
+	matrix2 *[][][3]uint8,
+	onPixel func(pixel1 uint8, pixel2 uint8) uint8,
+) [][][3]uint8 {
+	maxWidth := getMaxNum(len(*matrix1), len(*matrix2))
+	maxHeigth := getMaxNum(len((*matrix1)[0]), len((*matrix2)[0]))
+
+	newMatrix := [][][3]uint8{}
+
+	for x := 0; x < maxWidth; x++ {
+		newX := [][3]uint8{}
+
+		for y := 0; y < maxHeigth; y++ {
+			newY := [3]uint8{}
+
+			for j := 0; j < 3; j++ {
+				var pixel1 uint8 = 0
+				var pixel2 uint8 = 0
+
+				if x < len(*matrix1) && y < len((*matrix1)[0]) {
+					pixel1 = (*matrix1)[x][y][j]
+				}
+
+				if x < len(*matrix2) && y < len((*matrix2)[0]) {
+					pixel2 = (*matrix2)[x][y][j]
+				}
+
+				newY[j] = onPixel(pixel1, pixel2)
+			}
+
+			newX = append(newX, newY)
+		}
+
+		newMatrix = append(newMatrix, newX)
+	}
+
+	return newMatrix
+}
+
 func multiplyPixel(factor float32, pixel uint8) uint8 {
 	newPixel := factor * float32(pixel)
 
@@ -84,6 +124,22 @@ func multiplyPixel(factor float32, pixel uint8) uint8 {
 	}
 
 	return uint8(newPixel)
+}
+
+func operateOnMatrix(
+	matrix *[][][3]uint8,
+	onPixel func(pixel uint8) uint8,
+) {
+	width := len(*matrix)
+	heigth := len((*matrix)[0])
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			(*matrix)[x][y][0] = onPixel((*matrix)[x][y][0])
+			(*matrix)[x][y][1] = onPixel((*matrix)[x][y][1])
+			(*matrix)[x][y][2] = onPixel((*matrix)[x][y][2])
+		}
+	}
 }
 
 func convertMatrixToGrayscale(matrix *[][][3]uint8) {
@@ -142,60 +198,17 @@ func convertMatrixToBinary(matrix *[][][3]uint8) {
 	}
 }
 
-func operateOnMatrix(
-	matrix *[][][3]uint8,
-	onPixel func(pixel uint8) uint8,
-) {
+func notMatrix(matrix *[][][3]uint8) {
 	width := len(*matrix)
 	heigth := len((*matrix)[0])
 
 	for x := 0; x < width; x++ {
 		for y := 0; y < heigth; y++ {
-			(*matrix)[x][y][0] = onPixel((*matrix)[x][y][0])
-			(*matrix)[x][y][1] = onPixel((*matrix)[x][y][1])
-			(*matrix)[x][y][2] = onPixel((*matrix)[x][y][2])
+			(*matrix)[x][y][0] = 255 - (*matrix)[x][y][0]
+			(*matrix)[x][y][1] = 255 - (*matrix)[x][y][1]
+			(*matrix)[x][y][2] = 255 - (*matrix)[x][y][2]
 		}
 	}
-}
-
-func operateOnTwoMatrixes(
-	matrix1 *[][][3]uint8,
-	matrix2 *[][][3]uint8,
-	onPixel func(pixel1 uint8, pixel2 uint8) uint8,
-) [][][3]uint8 {
-	maxWidth := getMaxNum(len(*matrix1), len(*matrix2))
-	maxHeigth := getMaxNum(len((*matrix1)[0]), len((*matrix2)[0]))
-
-	newMatrix := [][][3]uint8{}
-
-	for x := 0; x < maxWidth; x++ {
-		newX := [][3]uint8{}
-
-		for y := 0; y < maxHeigth; y++ {
-			newY := [3]uint8{}
-
-			for j := 0; j < 3; j++ {
-				var pixel1 uint8 = 0
-				var pixel2 uint8 = 0
-
-				if x < len(*matrix1) && y < len((*matrix1)[0]) {
-					pixel1 = (*matrix1)[x][y][j]
-				}
-
-				if x < len(*matrix2) && y < len((*matrix2)[0]) {
-					pixel2 = (*matrix2)[x][y][j]
-				}
-
-				newY[j] = onPixel(pixel1, pixel2)
-			}
-
-			newX = append(newX, newY)
-		}
-
-		newMatrix = append(newMatrix, newX)
-	}
-
-	return newMatrix
 }
 
 //curry pra poder usar mais facilmente
@@ -432,7 +445,15 @@ func main() {
 	})
 
 	router.POST("/process-img/not", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		handleOneImage(context, multiplyPixelCurry(-1))
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		notMatrix(matrix)
+
+		sendMatrixAsImg(context, matrix)
 	})
 
 	router.POST("/process-img/grayscale", CORSMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
