@@ -363,7 +363,7 @@ func CORSMiddleware(context *gin.Context) {
 }
 
 func maxBodySizeMiddleware(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 6000000)
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 3000000)
 
 	c.Next()
 }
