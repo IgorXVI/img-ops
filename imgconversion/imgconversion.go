@@ -10,6 +10,10 @@ import (
 
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
+
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
 )
 
 //parte que lida com conversão de dados
@@ -68,6 +72,49 @@ func CreatePNGBufferFromMatrix(matrix *[][][3]uint8) (*bytes.Buffer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return buf, nil
+}
+
+func GetMatrixColorHistAsPNGBuffer(color string, matrix *[][][3]uint8) (*bytes.Buffer, error) {
+	colorIndexMap := map[string]int{
+		"red":   0,
+		"green": 1,
+		"blue":  2,
+	}
+
+	colorIndex := colorIndexMap[color]
+
+	width := len(*matrix)
+	heigth := len((*matrix)[0])
+
+	var values plotter.Values
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			colorIndexValue := float64((*matrix)[x][y][colorIndex])
+			values = append(values, colorIndexValue)
+		}
+	}
+
+	p := plot.New()
+	p.Title.Text = color + " histogram"
+
+	hist, err := plotter.NewHist(values, 10000)
+	if err != nil {
+		return nil, err
+	}
+
+	p.Add(hist)
+
+	writer, err := p.WriterTo(20*vg.Centimeter, 20*vg.Centimeter, "png")
+	if err != nil {
+		return nil, err
+	}
+
+	buf := new(bytes.Buffer)
+
+	writer.WriteTo(buf)
 
 	return buf, nil
 }

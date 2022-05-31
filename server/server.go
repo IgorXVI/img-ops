@@ -95,6 +95,22 @@ func handleOneImage(context *gin.Context, pixelOperation func(pixel uint8) uint8
 	sendMatrixAsImg(context, matrix)
 }
 
+func handleImgColorHistogram(context *gin.Context, color string) {
+	matrix, err := loadImgFromParams(context, "img")
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
+
+	buf, err := imgconversion.GetMatrixColorHistAsPNGBuffer(color, matrix)
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
+
+	context.Data(http.StatusOK, "image/png", buf.Bytes())
+}
+
 func corsMiddleware(context *gin.Context) {
 	context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	context.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -210,6 +226,30 @@ func StartServer() {
 		imgprocessing.ConvertMatrixToBinary(matrix)
 
 		sendMatrixAsImg(context, matrix)
+	})
+
+	router.POST("/process-img/equalize-histogram", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		imgprocessing.EqualizeMatrixHistogram(matrix)
+
+		sendMatrixAsImg(context, matrix)
+	})
+
+	router.POST("/process-img/histogram/red", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		handleImgColorHistogram(context, "red")
+	})
+
+	router.POST("/process-img/histogram/green", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		handleImgColorHistogram(context, "green")
+	})
+
+	router.POST("/process-img/histogram/blue", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		handleImgColorHistogram(context, "blue")
 	})
 
 	router.Run("localhost:9090")

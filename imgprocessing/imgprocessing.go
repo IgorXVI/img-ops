@@ -1,5 +1,7 @@
 package imgprocessing
 
+import "math"
+
 //parte que processa as images
 
 func getMaxNum[T int | uint8](num1 T, num2 T) T {
@@ -82,19 +84,19 @@ func OperateOnTwoMatrixes(
 		for y := 0; y < maxHeigth; y++ {
 			newY := [3]uint8{}
 
-			for j := 0; j < 3; j++ {
+			for z := 0; z < 3; z++ {
 				var pixel1 uint8 = 0
 				var pixel2 uint8 = 0
 
 				if x < len(*matrix1) && y < len((*matrix1)[0]) {
-					pixel1 = (*matrix1)[x][y][j]
+					pixel1 = (*matrix1)[x][y][z]
 				}
 
 				if x < len(*matrix2) && y < len((*matrix2)[0]) {
-					pixel2 = (*matrix2)[x][y][j]
+					pixel2 = (*matrix2)[x][y][z]
 				}
 
-				newY[j] = onPixel(pixel1, pixel2)
+				newY[z] = onPixel(pixel1, pixel2)
 			}
 
 			newX = append(newX, newY)
@@ -203,6 +205,58 @@ func NOTMatrix(matrix *[][][3]uint8) {
 			(*matrix)[x][y][0] = 255 - (*matrix)[x][y][0]
 			(*matrix)[x][y][1] = 255 - (*matrix)[x][y][1]
 			(*matrix)[x][y][2] = 255 - (*matrix)[x][y][2]
+		}
+	}
+}
+
+func EqualizeMatrixHistogram(matrix *[][][3]uint8) {
+	var hist [3][256]int
+
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 256; j++ {
+			hist[i][j] = 0
+		}
+	}
+
+	width := len(*matrix)
+	heigth := len((*matrix)[0])
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			for z := 0; z < 3; z++ {
+				colorValue := (*matrix)[x][y][z]
+				hist[z][colorValue]++
+			}
+		}
+	}
+
+	var histCFD [3][256]int
+
+	for i := 0; i < 3; i++ {
+		histCFD[i][0] = hist[i][0]
+	}
+
+	for i := 0; i < 3; i++ {
+		for j := 1; j < 256; j++ {
+			histCFD[i][j] = histCFD[i][j-1] + hist[i][j]
+		}
+	}
+
+	matrixSize := float64(width * heigth)
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			for z := 0; z < 3; z++ {
+				colorValue := (*matrix)[x][y][z]
+
+				histCFDValue := float64(histCFD[z][colorValue])
+
+				histCFDMin := float64(histCFD[z][0])
+
+				result := math.Floor((histCFDValue - histCFDMin) / (matrixSize - histCFDMin) * 255)
+
+				(*matrix)[x][y][z] = uint8(result)
+			}
 		}
 	}
 }
