@@ -1,10 +1,8 @@
 package server
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"image/png"
 	"net/http"
 	"strconv"
 
@@ -31,11 +29,7 @@ func sendInputError(context *gin.Context, err error) {
 }
 
 func sendMatrixAsImg(context *gin.Context, matrix *[][][3]uint8) {
-	img := imgconversion.CreateImgFromMatrix(matrix)
-
-	buf := new(bytes.Buffer)
-
-	err := png.Encode(buf, img)
+	buf, err := imgconversion.CreatePNGBufferFromMatrix(matrix)
 	if err != nil {
 		sendInputError(context, err)
 		return

@@ -1,13 +1,15 @@
 package imgconversion
 
 import (
-	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/tiff"
+	"bytes"
 	"image"
 	"image/color"
 	_ "image/jpeg"
-	_ "image/png"
+	"image/png"
 	"mime/multipart"
+
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 )
 
 //parte que lida com conversão de dados
@@ -55,4 +57,17 @@ func CreateImgFromMatrix(matrix *[][][3]uint8) *image.NRGBA {
 	}
 
 	return img
+}
+
+func CreatePNGBufferFromMatrix(matrix *[][][3]uint8) (*bytes.Buffer, error) {
+	img := CreateImgFromMatrix(matrix)
+
+	buf := new(bytes.Buffer)
+
+	err := png.Encode(buf, img)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf, nil
 }
