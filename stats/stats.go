@@ -11,14 +11,14 @@ import (
 	"img-ops/imgprocessing"
 )
 
-func makePixelHist(title string, pixelValues []uint8) (*bytes.Buffer, error) {
+func makePixelHist(colorName string, pixelValues []uint8) (*bytes.Buffer, error) {
 	var values plotter.Values
 	for i := 0; i < len(pixelValues); i++ {
 		values = append(values, float64(pixelValues[i]))
 	}
 
 	p := plot.New()
-	p.Title.Text = title
+	p.Title.Text = colorName
 
 	hist, err := plotter.NewHist(values, 256)
 	if err != nil {
