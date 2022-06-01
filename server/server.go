@@ -8,6 +8,7 @@ import (
 
 	"img-ops/imgconversion"
 	"img-ops/imgprocessing"
+	"img-ops/stats"
 )
 
 //parte que lida com requisições
@@ -231,13 +232,13 @@ func StartServer() {
 			return
 		}
 
-		buf, err := imgconversion.GetMatrixHistRGB(matrix)
+		histMatrix, err := stats.GetMatrixHistRGB(matrix)
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		context.Data(http.StatusOK, "image/png", buf.Bytes())
+		sendMatrixAsImg(context, histMatrix)
 	})
 
 	router.Run("localhost:9090")

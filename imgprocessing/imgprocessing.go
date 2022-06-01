@@ -260,3 +260,48 @@ func EqualizeMatrixHistogram(matrix *[][][3]uint8) {
 		}
 	}
 }
+
+func GetColorValues(colorIndex int, matrix *[][][3]uint8) []uint8 {
+	width := len(*matrix)
+	heigth := len((*matrix)[0])
+
+	var values []uint8
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			colorIndexValue := (*matrix)[x][y][colorIndex]
+			values = append(values, colorIndexValue)
+		}
+	}
+
+	return values
+}
+
+func ReplaceMatrixBlackForColor(colorIndex int, matrix *[][][3]uint8) {
+	width := len(*matrix)
+	heigth := len((*matrix)[0])
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < heigth; y++ {
+			for z := 0; z < 3; z++ {
+				if (*matrix)[x][y][0] != 255 || (*matrix)[x][y][1] != 255 || (*matrix)[x][y][2] != 255 {
+					(*matrix)[x][y][0] = 0
+					(*matrix)[x][y][1] = 0
+					(*matrix)[x][y][2] = 0
+
+					(*matrix)[x][y][colorIndex] = 255
+				}
+			}
+		}
+	}
+}
+
+func CombineMatrixesHorizontally(matrixes []*[][][3]uint8) *[][][3]uint8 {
+	var newMatrix [][][3]uint8
+
+	for i := 0; i < len(matrixes); i++ {
+		newMatrix = append(newMatrix, *matrixes[i]...)
+	}
+
+	return &newMatrix
+}
