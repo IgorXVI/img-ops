@@ -261,7 +261,7 @@ func EqualizeMatrixHistogram(matrix *[][][3]uint8) {
 	}
 }
 
-func GetColorValues(colorIndex int, matrix *[][][3]uint8) []uint8 {
+func GetColorPixelValues(colorIndex int, matrix *[][][3]uint8) []uint8 {
 	width := len(*matrix)
 	heigth := len((*matrix)[0])
 
