@@ -8,7 +8,7 @@ import (
 
 	"img-ops/imgconversion"
 	"img-ops/imgprocessing"
-	"img-ops/stats"
+	"img-ops/imgstatistics"
 )
 
 //parte que lida com requisições
@@ -232,7 +232,7 @@ func StartServer() {
 			return
 		}
 
-		histMatrix, err := stats.GetMatrixHistRGB(matrix)
+		histMatrix, err := imgstatistics.GetMatrixHistRGB(matrix)
 		if err != nil {
 			sendInputError(context, err)
 			return
