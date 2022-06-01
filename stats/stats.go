@@ -44,10 +44,10 @@ func GetMatrixHistRGB(matrix *[][][3]uint8) (*[][][3]uint8, error) {
 
 	colorNames := [3]string{"red", "green", "blue"}
 
-	for i := 0; i < 3; i++ {
-		pixelValues := imgprocessing.GetColorPixelValues(i, matrix)
+	colorPixelValues := imgprocessing.GetColorPixelValues(matrix)
 
-		histBuf, err := makePixelHist(colorNames[i], pixelValues)
+	for i := 0; i < 3; i++ {
+		histBuf, err := makePixelHist(colorNames[i], colorPixelValues[i])
 		if err != nil {
 			return nil, err
 		}
