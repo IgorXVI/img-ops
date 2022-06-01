@@ -11,14 +11,14 @@ import (
 	"img-ops/imgprocessing"
 )
 
-func makePixelHist(pixelValues []uint8) (*bytes.Buffer, error) {
+func makePixelHist(title string, pixelValues []uint8) (*bytes.Buffer, error) {
 	var values plotter.Values
 	for i := 0; i < len(pixelValues); i++ {
 		values = append(values, float64(pixelValues[i]))
 	}
 
 	p := plot.New()
-	p.Title.Text = ""
+	p.Title.Text = title
 
 	hist, err := plotter.NewHist(values, 256)
 	if err != nil {
@@ -42,10 +42,12 @@ func makePixelHist(pixelValues []uint8) (*bytes.Buffer, error) {
 func GetMatrixHistRGB(matrix *[][][3]uint8) (*[][][3]uint8, error) {
 	var matrixes []*[][][3]uint8
 
+	colorNames := [3]string{"red", "green", "blue"}
+
 	for i := 0; i < 3; i++ {
 		colorValues := imgprocessing.GetColorValues(i, matrix)
 
-		histBuf, err := makePixelHist(colorValues)
+		histBuf, err := makePixelHist(colorNames[i], colorValues)
 		if err != nil {
 			return nil, err
 		}
