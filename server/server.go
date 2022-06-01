@@ -44,7 +44,7 @@ func loadImgFromParams(context *gin.Context, name string) (*[][][3]uint8, error)
 		return nil, err
 	}
 
-	matrix, err := imgconversion.LoadImg(&multipartFile)
+	matrix, err := imgconversion.LoadImg(multipartFile)
 	if err != nil {
 		return nil, err
 	}
@@ -95,22 +95,6 @@ func handleOneImage(context *gin.Context, pixelOperation func(pixel uint8) uint8
 	sendMatrixAsImg(context, matrix)
 }
 
-func handleImgColorHistogram(context *gin.Context, color string) {
-	matrix, err := loadImgFromParams(context, "img")
-	if err != nil {
-		sendInputError(context, err)
-		return
-	}
-
-	buf, err := imgconversion.GetMatrixColorHistAsPNGBuffer(color, matrix)
-	if err != nil {
-		sendInputError(context, err)
-		return
-	}
-
-	context.Data(http.StatusOK, "image/png", buf.Bytes())
-}
-
 func corsMiddleware(context *gin.Context) {
 	context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	context.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -126,7 +110,7 @@ func corsMiddleware(context *gin.Context) {
 }
 
 func maxBodySizeMiddleware(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 3000000)
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 3000000000)
 
 	c.Next()
 }
@@ -240,16 +224,20 @@ func StartServer() {
 		sendMatrixAsImg(context, matrix)
 	})
 
-	router.POST("/process-img/histogram/red", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		handleImgColorHistogram(context, "red")
-	})
+	router.POST("/process-img/histogram", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
 
-	router.POST("/process-img/histogram/green", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		handleImgColorHistogram(context, "green")
-	})
+		buf, err := imgconversion.GetMatrixHistRGB(matrix)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
 
-	router.POST("/process-img/histogram/blue", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		handleImgColorHistogram(context, "blue")
+		context.Data(http.StatusOK, "image/png", buf.Bytes())
 	})
 
 	router.Run("localhost:9090")

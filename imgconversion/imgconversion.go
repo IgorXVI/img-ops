@@ -6,7 +6,7 @@ import (
 	"image/color"
 	_ "image/jpeg"
 	"image/png"
-	"mime/multipart"
+	"io"
 
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
@@ -18,8 +18,8 @@ import (
 
 //parte que lida com conversão de dados
 
-func LoadImg(multipartFile *multipart.File) (*[][][3]uint8, error) {
-	image, _, err := image.Decode(*multipartFile)
+func LoadImg(data io.Reader) (*[][][3]uint8, error) {
+	image, _, err := image.Decode(data)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func CreatePNGBufferFromMatrix(matrix *[][][3]uint8) (*bytes.Buffer, error) {
 	return buf, nil
 }
 
-func GetMatrixColorHistAsPNGBuffer(color string, matrix *[][][3]uint8) (*bytes.Buffer, error) {
+func getMatrixHistForOneColor(color string, matrix *[][][3]uint8) (*[][][3]uint8, error) {
 	colorIndexMap := map[string]int{
 		"red":   0,
 		"green": 1,
@@ -98,16 +98,16 @@ func GetMatrixColorHistAsPNGBuffer(color string, matrix *[][][3]uint8) (*bytes.B
 	}
 
 	p := plot.New()
-	p.Title.Text = color + " histogram"
+	p.Title.Text = color
 
-	hist, err := plotter.NewHist(values, 10000)
+	hist, err := plotter.NewHist(values, 256)
 	if err != nil {
 		return nil, err
 	}
 
 	p.Add(hist)
 
-	writer, err := p.WriterTo(20*vg.Centimeter, 20*vg.Centimeter, "png")
+	writer, err := p.WriterTo(7.5*vg.Centimeter, 7.5*vg.Centimeter, "png")
 	if err != nil {
 		return nil, err
 	}
@@ -116,5 +116,59 @@ func GetMatrixColorHistAsPNGBuffer(color string, matrix *[][][3]uint8) (*bytes.B
 
 	writer.WriteTo(buf)
 
-	return buf, nil
+	newMatrix, err := LoadImg(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	nWidth := len(*newMatrix)
+	nHeigth := len((*newMatrix)[0])
+
+	for x := 0; x < nWidth; x++ {
+		for y := 0; y < nHeigth; y++ {
+			for z := 0; z < 3; z++ {
+				if (*newMatrix)[x][y][0] != 255 || (*newMatrix)[x][y][1] != 255 || (*newMatrix)[x][y][2] != 255 {
+					(*newMatrix)[x][y][0] = 0
+					(*newMatrix)[x][y][1] = 0
+					(*newMatrix)[x][y][2] = 0
+
+					(*newMatrix)[x][y][colorIndex] = 255
+				}
+			}
+		}
+	}
+
+	return newMatrix, nil
+}
+
+func GetMatrixHistRGB(matrix *[][][3]uint8) (*bytes.Buffer, error) {
+	redHistMatrix, err := getMatrixHistForOneColor("red", matrix)
+	if err != nil {
+		return nil, err
+	}
+
+	greenHistMatrix, err := getMatrixHistForOneColor("green", matrix)
+	if err != nil {
+		return nil, err
+	}
+
+	blueHistMatrix, err := getMatrixHistForOneColor("blue", matrix)
+	if err != nil {
+		return nil, err
+	}
+
+	var newMatrix [][][3]uint8
+
+	newMatrix = append(newMatrix, *redHistMatrix...)
+
+	newMatrix = append(newMatrix, *greenHistMatrix...)
+
+	newMatrix = append(newMatrix, *blueHistMatrix...)
+
+	newBuf, err := CreatePNGBufferFromMatrix(&newMatrix)
+	if err != nil {
+		return nil, err
+	}
+
+	return newBuf, nil
 }
