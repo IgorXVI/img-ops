@@ -336,30 +336,62 @@ func ResizeNearestNeighbor(matrix *[][][3]uint8, newWidth int, newHeight int) *[
 	return &newMatrix
 }
 
-// func ResizeBilinear(matrix *[][][3]uint8, newWidth int, newHeight int) *[][][3]uint8 {
-// 	width := len(*matrix)
-// 	height := len((*matrix)[0])
+func ResizeBilinear(matrix *[][][3]uint8, newWidth int, newHeight int) *[][][3]uint8 {
+	width := len(*matrix)
+	height := len((*matrix)[0])
 
-// 	scaleX := float64(newWidth) / float64(width)
-// 	scaleY := float64(newHeight) / float64(height)
+	scaleX := float64(newWidth) / float64(width)
+	scaleY := float64(newHeight) / float64(height)
 
-// 	var newMatrix [][][3]uint8
+	var newMatrix [][][3]uint8
 
-// 	for x := 0; x < newWidth; x++ {
-// 		newX := [][3]uint8{}
+	diff := 0.5
 
-// 		oldX := int(math.Min(math.Round(float64(x)/scaleX), float64(width-1)))
+	for x := 0; x < newWidth; x++ {
+		newX := [][3]uint8{}
 
-// 		for y := 0; y < newHeight; y++ {
-// 			oldY := int(math.Min(math.Round(float64(y)/scaleY), float64(height-1)))
+		oldX := math.Round(math.Min(float64(x)/scaleX, float64(width)-1))
 
-// 			newY := (*matrix)[oldX][oldY]
+		x1 := oldX - diff
 
-// 			newX = append(newX, newY)
-// 		}
+		x2 := oldX + diff
 
-// 		newMatrix = append(newMatrix, newX)
-// 	}
+		for y := 0; y < newHeight; y++ {
+			oldY := math.Round(math.Min(float64(y)/scaleY, float64(height)-1))
 
-// 	return &newMatrix
-// }
+			y1 := oldY - diff
+
+			y2 := oldY + diff
+
+			newY := [3]uint8{}
+
+			for z := 0; z < 3; z++ {
+				Q11 := float64((*matrix)[int(x1)][int(y1)][z])
+				Q12 := float64((*matrix)[int(x2)][int(y1)][z])
+				Q21 := float64((*matrix)[int(x1)][int(y2)][z])
+				Q22 := float64((*matrix)[int(x2)][int(y2)][z])
+
+				var P1 float64
+				var P2 float64
+
+				if x1 == x2 {
+					P1 = Q11
+					P2 = Q22
+				} else {
+					P1 = (x2-oldX)*Q11 + (oldX-x1)*Q12
+					P2 = (x2-oldX)*Q21 + (oldX-x1)*Q22
+				}
+
+				P := uint8((y2-oldY)*P1 + (oldY-y1)*P2)
+
+				newY[z] = P
+			}
+
+			newX = append(newX, newY)
+		}
+
+		newMatrix = append(newMatrix, newX)
+	}
+
+	return &newMatrix
+}

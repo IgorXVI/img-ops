@@ -248,7 +248,7 @@ func StartServer() {
 			return
 		}
 
-		newMatrix := imgprocessing.ResizeNearestNeighbor(matrix, 500, 500)
+		newMatrix := imgprocessing.ResizeBilinear(matrix, 500, 500)
 
 		sendMatrixAsImg(context, newMatrix)
 	})
