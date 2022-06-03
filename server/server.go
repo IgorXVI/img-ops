@@ -241,5 +241,17 @@ func StartServer() {
 		sendMatrixAsImg(context, histMatrix)
 	})
 
+	router.POST("/process-img/scale", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		newMatrix := imgprocessing.ResizeNearestNeighbor(matrix, 500, 500)
+
+		sendMatrixAsImg(context, newMatrix)
+	})
+
 	router.Run("localhost:9090")
 }

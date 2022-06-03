@@ -307,3 +307,59 @@ func CombineMatrixesHorizontally(matrixes []*[][][3]uint8) *[][][3]uint8 {
 
 	return &newMatrix
 }
+
+func ResizeNearestNeighbor(matrix *[][][3]uint8, newWidth int, newHeight int) *[][][3]uint8 {
+	width := len(*matrix)
+	height := len((*matrix)[0])
+
+	scaleX := float64(newWidth) / float64(width)
+	scaleY := float64(newHeight) / float64(height)
+
+	var newMatrix [][][3]uint8
+
+	for x := 0; x < newWidth; x++ {
+		newX := [][3]uint8{}
+
+		oldX := int(math.Min(math.Round(float64(x)/scaleX), float64(width-1)))
+
+		for y := 0; y < newHeight; y++ {
+			oldY := int(math.Min(math.Round(float64(y)/scaleY), float64(height-1)))
+
+			newY := (*matrix)[oldX][oldY]
+
+			newX = append(newX, newY)
+		}
+
+		newMatrix = append(newMatrix, newX)
+	}
+
+	return &newMatrix
+}
+
+// func ResizeBilinear(matrix *[][][3]uint8, newWidth int, newHeight int) *[][][3]uint8 {
+// 	width := len(*matrix)
+// 	height := len((*matrix)[0])
+
+// 	scaleX := float64(newWidth) / float64(width)
+// 	scaleY := float64(newHeight) / float64(height)
+
+// 	var newMatrix [][][3]uint8
+
+// 	for x := 0; x < newWidth; x++ {
+// 		newX := [][3]uint8{}
+
+// 		oldX := int(math.Min(math.Round(float64(x)/scaleX), float64(width-1)))
+
+// 		for y := 0; y < newHeight; y++ {
+// 			oldY := int(math.Min(math.Round(float64(y)/scaleY), float64(height-1)))
+
+// 			newY := (*matrix)[oldX][oldY]
+
+// 			newX = append(newX, newY)
+// 		}
+
+// 		newMatrix = append(newMatrix, newX)
+// 	}
+
+// 	return &newMatrix
+// }
