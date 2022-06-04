@@ -302,7 +302,49 @@ func CombineMatrixesHorizontally(matrixes []*[][][3]uint8) *[][][3]uint8 {
 	var newMatrix [][][3]uint8
 
 	for i := 0; i < len(matrixes); i++ {
+		var blackVerticalLine [][][3]uint8
+
+		for x := 0; x < 2; x++ {
+			newX := [][3]uint8{}
+
+			for y := 0; y < len((*matrixes[i])[0]); y++ {
+				newY := [3]uint8{0, 0, 0}
+
+				newX = append(newX, newY)
+			}
+
+			blackVerticalLine = append(blackVerticalLine, newX)
+		}
+
+		newMatrix = append(newMatrix, blackVerticalLine...)
+
 		newMatrix = append(newMatrix, *matrixes[i]...)
+	}
+
+	return &newMatrix
+}
+
+func CombineMatrixesVertically(matrixes []*[][][3]uint8) *[][][3]uint8 {
+	var newMatrix [][][3]uint8
+
+	newMatrix = append(newMatrix, *matrixes[0]...)
+
+	width := len(*matrixes[0])
+
+	for i := 1; i < len(matrixes); i++ {
+		var blackHorizontalLine [][][3]uint8
+
+		for x := 0; x < len(*matrixes[i]); x++ {
+			newX := [][3]uint8{{0, 0, 0}, {0, 0, 0}}
+
+			blackHorizontalLine = append(blackHorizontalLine, newX)
+		}
+
+		for x := 0; x < width; x++ {
+			newMatrix[x] = append(newMatrix[x], blackHorizontalLine[x]...)
+
+			newMatrix[x] = append(newMatrix[x], (*matrixes[i])[x]...)
+		}
 	}
 
 	return &newMatrix
@@ -326,66 +368,6 @@ func ResizeNearestNeighbor(matrix *[][][3]uint8, newWidth uint64, newHeight uint
 			oldY := int(math.Min(math.Round(float64(y)/scaleY), float64(height-1)))
 
 			newY := (*matrix)[oldX][oldY]
-
-			newX = append(newX, newY)
-		}
-
-		newMatrix = append(newMatrix, newX)
-	}
-
-	return &newMatrix
-}
-
-func ResizeBilinear(matrix *[][][3]uint8, newWidth uint64, newHeight uint64) *[][][3]uint8 {
-	width := len(*matrix)
-	height := len((*matrix)[0])
-
-	scaleX := float64(newWidth) / float64(width)
-	scaleY := float64(newHeight) / float64(height)
-
-	var newMatrix [][][3]uint8
-
-	diff := 0.5
-
-	for x := 0; x < int(newWidth); x++ {
-		newX := [][3]uint8{}
-
-		oldX := math.Min(float64(x)/scaleX, float64(width)-1)
-
-		x1 := oldX - diff
-
-		x2 := oldX + diff
-
-		for y := 0; y < int(newHeight); y++ {
-			oldY := math.Min(float64(y)/scaleY, float64(height)-1)
-
-			y1 := oldY - diff
-
-			y2 := oldY + diff
-
-			newY := [3]uint8{}
-
-			for z := 0; z < 3; z++ {
-				Q11 := float64((*matrix)[int(x1)][int(y1)][z])
-				Q12 := float64((*matrix)[int(x2)][int(y1)][z])
-				Q21 := float64((*matrix)[int(x1)][int(y2)][z])
-				Q22 := float64((*matrix)[int(x2)][int(y2)][z])
-
-				var P1 float64
-				var P2 float64
-
-				if x1 == x2 {
-					P1 = Q11
-					P2 = Q22
-				} else {
-					P1 = (x2-oldX)*Q11 + (oldX-x1)*Q12
-					P2 = (x2-oldX)*Q21 + (oldX-x1)*Q22
-				}
-
-				P := uint8((y2-oldY)*P1 + (oldY-y1)*P2)
-
-				newY[z] = P
-			}
 
 			newX = append(newX, newY)
 		}

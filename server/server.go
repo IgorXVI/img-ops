@@ -241,32 +241,52 @@ func StartServer() {
 		sendMatrixAsImg(context, histMatrix)
 	})
 
-	router.POST("/process-img/resize/:newWidth/:newHeight", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		newWidthStr := context.Param("newWidth")
+	router.POST("/process-img/compare-histograms", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		//img1
 
-		newWidth, err := strconv.ParseUint(newWidthStr, 10, 64)
+		matrix1, err := loadImgFromParams(context, "img1")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		newHeightStr := context.Param("newHeight")
-
-		newHeigh, err := strconv.ParseUint(newHeightStr, 10, 64)
+		histMatrix1, err := imgstatistics.GetMatrixHistRGB(matrix1)
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		matrix, err := loadImgFromParams(context, "img")
+		matrix1Resized := imgprocessing.ResizeNearestNeighbor(matrix1, 500, 500)
+
+		histMatrix1Resized := imgprocessing.ResizeNearestNeighbor(histMatrix1, 1500, 500)
+
+		result1 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix1Resized, histMatrix1Resized})
+
+		//img2
+
+		matrix2, err := loadImgFromParams(context, "img2")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		newMatrix := imgprocessing.ResizeBilinear(matrix, newWidth, newHeigh)
+		histMatrix2, err := imgstatistics.GetMatrixHistRGB(matrix2)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
 
-		sendMatrixAsImg(context, newMatrix)
+		matrix2Resized := imgprocessing.ResizeNearestNeighbor(matrix2, 500, 500)
+
+		histMatrix2Resized := imgprocessing.ResizeNearestNeighbor(histMatrix2, 1500, 500)
+
+		result2 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix2Resized, histMatrix2Resized})
+
+		//combinando resultados
+
+		combinedResult := imgprocessing.CombineMatrixesVertically([]*[][][3]uint8{result1, result2})
+
+		sendMatrixAsImg(context, combinedResult)
 	})
 
 	router.Run("localhost:9090")
