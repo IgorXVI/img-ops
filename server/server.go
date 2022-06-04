@@ -241,14 +241,30 @@ func StartServer() {
 		sendMatrixAsImg(context, histMatrix)
 	})
 
-	router.POST("/process-img/scale", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/resize/:newWidth/:newHeight", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		newWidthStr := context.Param("newWidth")
+
+		newWidth, err := strconv.ParseUint(newWidthStr, 10, 64)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		newHeightStr := context.Param("newHeight")
+
+		newHeigh, err := strconv.ParseUint(newHeightStr, 10, 64)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
 		matrix, err := loadImgFromParams(context, "img")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		newMatrix := imgprocessing.ResizeBilinear(matrix, 500, 500)
+		newMatrix := imgprocessing.ResizeBilinear(matrix, newWidth, newHeigh)
 
 		sendMatrixAsImg(context, newMatrix)
 	})
