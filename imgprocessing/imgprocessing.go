@@ -74,14 +74,14 @@ func OperateOnTwoMatrixes(
 	onPixel func(pixel1 uint8, pixel2 uint8) uint8,
 ) [][][3]uint8 {
 	maxWidth := getMaxNum(len(*matrix1), len(*matrix2))
-	maxHeigth := getMaxNum(len((*matrix1)[0]), len((*matrix2)[0]))
+	maxHeight := getMaxNum(len((*matrix1)[0]), len((*matrix2)[0]))
 
 	newMatrix := [][][3]uint8{}
 
 	for x := 0; x < maxWidth; x++ {
 		newX := [][3]uint8{}
 
-		for y := 0; y < maxHeigth; y++ {
+		for y := 0; y < maxHeight; y++ {
 			newY := [3]uint8{}
 
 			for z := 0; z < 3; z++ {
@@ -129,10 +129,10 @@ func OperateOnMatrix(
 	onPixel func(pixel uint8) uint8,
 ) {
 	width := len(*matrix)
-	heigth := len((*matrix)[0])
+	height := len((*matrix)[0])
 
 	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
+		for y := 0; y < height; y++ {
 			(*matrix)[x][y][0] = onPixel((*matrix)[x][y][0])
 			(*matrix)[x][y][1] = onPixel((*matrix)[x][y][1])
 			(*matrix)[x][y][2] = onPixel((*matrix)[x][y][2])
@@ -142,10 +142,10 @@ func OperateOnMatrix(
 
 func ConvertMatrixToGrayscale(matrix *[][][3]uint8) {
 	width := len(*matrix)
-	heigth := len((*matrix)[0])
+	height := len((*matrix)[0])
 
 	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
+		for y := 0; y < height; y++ {
 			grayValueFloat32 := (float32((*matrix)[x][y][0]) + float32((*matrix)[x][y][1]) + float32((*matrix)[x][y][2])) / 3
 
 			grayValue := uint8(grayValueFloat32)
@@ -159,12 +159,12 @@ func ConvertMatrixToGrayscale(matrix *[][][3]uint8) {
 
 func ConvertMatrixToBinary(matrix *[][][3]uint8) {
 	width := len(*matrix)
-	heigth := len((*matrix)[0])
+	height := len((*matrix)[0])
 
 	pixelTotalSum := 0
 
 	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
+		for y := 0; y < height; y++ {
 			grayValueFloat32 := (float32((*matrix)[x][y][0]) + float32((*matrix)[x][y][1]) + float32((*matrix)[x][y][2])) / 3
 
 			grayValue := uint8(grayValueFloat32)
@@ -177,10 +177,10 @@ func ConvertMatrixToBinary(matrix *[][][3]uint8) {
 		}
 	}
 
-	threshold := uint8(pixelTotalSum / (width * heigth))
+	threshold := uint8(pixelTotalSum / (width * height))
 
 	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
+		for y := 0; y < height; y++ {
 			pixelValue := (*matrix)[x][y][0]
 
 			var newPixelValue uint8 = 0
@@ -198,10 +198,10 @@ func ConvertMatrixToBinary(matrix *[][][3]uint8) {
 
 func NOTMatrix(matrix *[][][3]uint8) {
 	width := len(*matrix)
-	heigth := len((*matrix)[0])
+	height := len((*matrix)[0])
 
 	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
+		for y := 0; y < height; y++ {
 			(*matrix)[x][y][0] = 255 - (*matrix)[x][y][0]
 			(*matrix)[x][y][1] = 255 - (*matrix)[x][y][1]
 			(*matrix)[x][y][2] = 255 - (*matrix)[x][y][2]
@@ -219,10 +219,10 @@ func EqualizeMatrixHistogram(matrix *[][][3]uint8) {
 	}
 
 	width := len(*matrix)
-	heigth := len((*matrix)[0])
+	height := len((*matrix)[0])
 
 	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
+		for y := 0; y < height; y++ {
 			for z := 0; z < 3; z++ {
 				colorValue := (*matrix)[x][y][z]
 				hist[z][colorValue]++
@@ -242,10 +242,10 @@ func EqualizeMatrixHistogram(matrix *[][][3]uint8) {
 		}
 	}
 
-	matrixSize := float64(width * heigth)
+	matrixSize := float64(width * height)
 
 	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
+		for y := 0; y < height; y++ {
 			for z := 0; z < 3; z++ {
 				colorValue := (*matrix)[x][y][z]
 
@@ -263,12 +263,12 @@ func EqualizeMatrixHistogram(matrix *[][][3]uint8) {
 
 func GetColorPixelValues(matrix *[][][3]uint8) [3][]uint8 {
 	width := len(*matrix)
-	heigth := len((*matrix)[0])
+	height := len((*matrix)[0])
 
 	var values [3][]uint8
 
 	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
+		for y := 0; y < height; y++ {
 			for z := 0; z < 3; z++ {
 				colorIndexValue := (*matrix)[x][y][z]
 				values[z] = append(values[z], colorIndexValue)
@@ -281,10 +281,10 @@ func GetColorPixelValues(matrix *[][][3]uint8) [3][]uint8 {
 
 func ReplaceMatrixBlackForColor(colorIndex int, matrix *[][][3]uint8) {
 	width := len(*matrix)
-	heigth := len((*matrix)[0])
+	height := len((*matrix)[0])
 
 	for x := 0; x < width; x++ {
-		for y := 0; y < heigth; y++ {
+		for y := 0; y < height; y++ {
 			for z := 0; z < 3; z++ {
 				if (*matrix)[x][y][0] != 255 || (*matrix)[x][y][1] != 255 || (*matrix)[x][y][2] != 255 {
 					(*matrix)[x][y][0] = 0
@@ -304,17 +304,15 @@ func CombineMatrixesHorizontally(matrixes []*[][][3]uint8) *[][][3]uint8 {
 	for i := 0; i < len(matrixes); i++ {
 		var blackVerticalLine [][][3]uint8
 
-		for x := 0; x < 2; x++ {
-			newX := [][3]uint8{}
+		newX := [][3]uint8{}
 
-			for y := 0; y < len((*matrixes[i])[0]); y++ {
-				newY := [3]uint8{0, 0, 0}
+		for y := 0; y < len((*matrixes[i])[0]); y++ {
+			newY := [3]uint8{0, 0, 0}
 
-				newX = append(newX, newY)
-			}
-
-			blackVerticalLine = append(blackVerticalLine, newX)
+			newX = append(newX, newY)
 		}
+
+		blackVerticalLine = append(blackVerticalLine, newX)
 
 		newMatrix = append(newMatrix, blackVerticalLine...)
 
@@ -335,7 +333,7 @@ func CombineMatrixesVertically(matrixes []*[][][3]uint8) *[][][3]uint8 {
 		var blackHorizontalLine [][][3]uint8
 
 		for x := 0; x < len(*matrixes[i]); x++ {
-			newX := [][3]uint8{{0, 0, 0}, {0, 0, 0}}
+			newX := [][3]uint8{{0, 0, 0}}
 
 			blackHorizontalLine = append(blackHorizontalLine, newX)
 		}
@@ -368,6 +366,27 @@ func ResizeNearestNeighbor(matrix *[][][3]uint8, newWidth uint64, newHeight uint
 			oldY := int(math.Min(math.Round(float64(y)/scaleY), float64(height-1)))
 
 			newY := (*matrix)[oldX][oldY]
+
+			newX = append(newX, newY)
+		}
+
+		newMatrix = append(newMatrix, newX)
+	}
+
+	return &newMatrix
+}
+
+func CopyMatrix(matrix *[][][3]uint8) *[][][3]uint8 {
+	width := len(*matrix)
+	height := len((*matrix)[0])
+
+	var newMatrix [][][3]uint8
+
+	for x := 0; x < width; x++ {
+		newX := [][3]uint8{}
+
+		for y := 0; y < height; y++ {
+			newY := (*matrix)[x][y]
 
 			newX = append(newX, newY)
 		}

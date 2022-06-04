@@ -66,3 +66,31 @@ func GetMatrixHistRGB(matrix *[][][3]uint8) (*[][][3]uint8, error) {
 
 	return newMatrix, nil
 }
+
+func CompareHistograms(matrix1 *[][][3]uint8, matrix2 *[][][3]uint8) (*[][][3]uint8, error) {
+	histMatrix1, err := GetMatrixHistRGB(matrix1)
+	if err != nil {
+		return nil, err
+	}
+
+	histMatrix2, err := GetMatrixHistRGB(matrix2)
+	if err != nil {
+		return nil, err
+	}
+
+	matrix1Resized := imgprocessing.ResizeNearestNeighbor(matrix1, 500, 500)
+
+	histMatrix1Resized := imgprocessing.ResizeNearestNeighbor(histMatrix1, 1500, 500)
+
+	result1 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix1Resized, histMatrix1Resized})
+
+	matrix2Resized := imgprocessing.ResizeNearestNeighbor(matrix2, 500, 500)
+
+	histMatrix2Resized := imgprocessing.ResizeNearestNeighbor(histMatrix2, 1500, 500)
+
+	result2 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix2Resized, histMatrix2Resized})
+
+	combinedResult := imgprocessing.CombineMatrixesVertically([]*[][][3]uint8{result1, result2})
+
+	return combinedResult, nil
+}

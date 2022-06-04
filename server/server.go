@@ -242,27 +242,11 @@ func StartServer() {
 	})
 
 	router.POST("/process-img/compare-histograms", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		//img1
-
 		matrix1, err := loadImgFromParams(context, "img1")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
-
-		histMatrix1, err := imgstatistics.GetMatrixHistRGB(matrix1)
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		matrix1Resized := imgprocessing.ResizeNearestNeighbor(matrix1, 500, 500)
-
-		histMatrix1Resized := imgprocessing.ResizeNearestNeighbor(histMatrix1, 1500, 500)
-
-		result1 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix1Resized, histMatrix1Resized})
-
-		//img2
 
 		matrix2, err := loadImgFromParams(context, "img2")
 		if err != nil {
@@ -270,23 +254,33 @@ func StartServer() {
 			return
 		}
 
-		histMatrix2, err := imgstatistics.GetMatrixHistRGB(matrix2)
+		result, err := imgstatistics.CompareHistograms(matrix1, matrix2)
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		matrix2Resized := imgprocessing.ResizeNearestNeighbor(matrix2, 500, 500)
+		sendMatrixAsImg(context, result)
+	})
 
-		histMatrix2Resized := imgprocessing.ResizeNearestNeighbor(histMatrix2, 1500, 500)
+	router.POST("/process-img/equalize-and-compare-histograms", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
 
-		result2 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix2Resized, histMatrix2Resized})
+		matrixOld := imgprocessing.CopyMatrix(matrix)
 
-		//combinando resultados
+		imgprocessing.EqualizeMatrixHistogram(matrix)
 
-		combinedResult := imgprocessing.CombineMatrixesVertically([]*[][][3]uint8{result1, result2})
+		result, err := imgstatistics.CompareHistograms(matrixOld, matrix)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
 
-		sendMatrixAsImg(context, combinedResult)
+		sendMatrixAsImg(context, result)
 	})
 
 	router.Run("localhost:9090")
