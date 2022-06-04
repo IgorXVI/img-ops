@@ -298,25 +298,49 @@ func ReplaceMatrixBlackForColor(colorIndex int, matrix *[][][3]uint8) {
 	}
 }
 
+func makeVerticalLine(width int, RGB [3]uint8, amountOfPixels int) *[][][3]uint8 {
+	var verticalLine [][][3]uint8
+
+	for x := 0; x < amountOfPixels; x++ {
+		newX := [][3]uint8{}
+
+		for y := 0; y < width; y++ {
+			newX = append(newX, RGB)
+		}
+
+		verticalLine = append(verticalLine, newX)
+	}
+
+	return &verticalLine
+}
+
+func makeHorizontalLine(width int, RGB [3]uint8, amountOfPixels int) *[][][3]uint8 {
+	var horizontalLine [][][3]uint8
+
+	for x := 0; x < width; x++ {
+		newX := [][3]uint8{}
+
+		for y := 0; y < amountOfPixels; y++ {
+			newX = append(newX, RGB)
+		}
+
+		horizontalLine = append(horizontalLine, newX)
+	}
+
+	return &horizontalLine
+}
+
 func CombineMatrixesHorizontally(matrixes []*[][][3]uint8) *[][][3]uint8 {
 	var newMatrix [][][3]uint8
 
 	for i := 0; i < len(matrixes); i++ {
-		var blackVerticalLine [][][3]uint8
+		verticalLine := makeVerticalLine(len((*matrixes[i])[0]), [3]uint8{255, 255, 255}, 5)
 
-		newX := [][3]uint8{}
-
-		for y := 0; y < len((*matrixes[i])[0]); y++ {
-			newY := [3]uint8{0, 0, 0}
-
-			newX = append(newX, newY)
-		}
-
-		blackVerticalLine = append(blackVerticalLine, newX)
-
-		newMatrix = append(newMatrix, blackVerticalLine...)
+		newMatrix = append(newMatrix, *verticalLine...)
 
 		newMatrix = append(newMatrix, *matrixes[i]...)
+
+		newMatrix = append(newMatrix, *verticalLine...)
 	}
 
 	return &newMatrix
@@ -325,23 +349,21 @@ func CombineMatrixesHorizontally(matrixes []*[][][3]uint8) *[][][3]uint8 {
 func CombineMatrixesVertically(matrixes []*[][][3]uint8) *[][][3]uint8 {
 	var newMatrix [][][3]uint8
 
-	newMatrix = append(newMatrix, *matrixes[0]...)
-
 	width := len(*matrixes[0])
 
-	for i := 1; i < len(matrixes); i++ {
-		var blackHorizontalLine [][][3]uint8
+	firstHorizontalLine := makeHorizontalLine(width, [3]uint8{255, 255, 255}, 0)
 
-		for x := 0; x < len(*matrixes[i]); x++ {
-			newX := [][3]uint8{{0, 0, 0}}
+	newMatrix = append(newMatrix, *firstHorizontalLine...)
 
-			blackHorizontalLine = append(blackHorizontalLine, newX)
-		}
+	for i := 0; i < len(matrixes); i++ {
+		horizontalLine := makeHorizontalLine(len(*matrixes[i]), [3]uint8{255, 255, 255}, 5)
 
 		for x := 0; x < width; x++ {
-			newMatrix[x] = append(newMatrix[x], blackHorizontalLine[x]...)
+			newMatrix[x] = append(newMatrix[x], (*horizontalLine)[x]...)
 
 			newMatrix[x] = append(newMatrix[x], (*matrixes[i])[x]...)
+
+			newMatrix[x] = append(newMatrix[x], (*horizontalLine)[x]...)
 		}
 	}
 
