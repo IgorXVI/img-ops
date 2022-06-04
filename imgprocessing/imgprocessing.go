@@ -330,11 +330,11 @@ func makeHorizontalLine(width int, RGB [3]uint8, amountOfPixels int) *[][][3]uin
 	return &horizontalLine
 }
 
-func CombineMatrixesHorizontally(matrixes []*[][][3]uint8) *[][][3]uint8 {
+func CombineMatrixesHorizontally(matrixes []*[][][3]uint8, separatorWidth int) *[][][3]uint8 {
 	var newMatrix [][][3]uint8
 
 	for i := 0; i < len(matrixes); i++ {
-		verticalLine := makeVerticalLine(len((*matrixes[i])[0]), [3]uint8{255, 255, 255}, 5)
+		verticalLine := makeVerticalLine(len((*matrixes[i])[0]), [3]uint8{255, 255, 255}, separatorWidth)
 
 		newMatrix = append(newMatrix, *verticalLine...)
 
@@ -346,7 +346,7 @@ func CombineMatrixesHorizontally(matrixes []*[][][3]uint8) *[][][3]uint8 {
 	return &newMatrix
 }
 
-func CombineMatrixesVertically(matrixes []*[][][3]uint8) *[][][3]uint8 {
+func CombineMatrixesVertically(matrixes []*[][][3]uint8, separatorWidth int) *[][][3]uint8 {
 	var newMatrix [][][3]uint8
 
 	width := len(*matrixes[0])
@@ -356,7 +356,7 @@ func CombineMatrixesVertically(matrixes []*[][][3]uint8) *[][][3]uint8 {
 	newMatrix = append(newMatrix, *firstHorizontalLine...)
 
 	for i := 0; i < len(matrixes); i++ {
-		horizontalLine := makeHorizontalLine(len(*matrixes[i]), [3]uint8{255, 255, 255}, 5)
+		horizontalLine := makeHorizontalLine(len(*matrixes[i]), [3]uint8{255, 255, 255}, separatorWidth)
 
 		for x := 0; x < width; x++ {
 			newMatrix[x] = append(newMatrix[x], (*horizontalLine)[x]...)

@@ -62,7 +62,7 @@ func GetMatrixHistRGB(matrix *[][][3]uint8) (*[][][3]uint8, error) {
 		matrixes = append(matrixes, histMatrix)
 	}
 
-	newMatrix := imgprocessing.CombineMatrixesHorizontally(matrixes)
+	newMatrix := imgprocessing.CombineMatrixesHorizontally(matrixes, 5)
 
 	return newMatrix, nil
 }
@@ -82,15 +82,15 @@ func CompareHistograms(matrix1 *[][][3]uint8, matrix2 *[][][3]uint8) (*[][][3]ui
 
 	histMatrix1Resized := imgprocessing.ResizeNearestNeighbor(histMatrix1, 1500, 500)
 
-	result1 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix1Resized, histMatrix1Resized})
+	result1 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix1Resized, histMatrix1Resized}, 5)
 
 	matrix2Resized := imgprocessing.ResizeNearestNeighbor(matrix2, 500, 500)
 
 	histMatrix2Resized := imgprocessing.ResizeNearestNeighbor(histMatrix2, 1500, 500)
 
-	result2 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix2Resized, histMatrix2Resized})
+	result2 := imgprocessing.CombineMatrixesHorizontally([]*[][][3]uint8{matrix2Resized, histMatrix2Resized}, 5)
 
-	combinedResult := imgprocessing.CombineMatrixesVertically([]*[][][3]uint8{result1, result2})
+	combinedResult := imgprocessing.CombineMatrixesVertically([]*[][][3]uint8{result1, result2}, 15)
 
 	return combinedResult, nil
 }
