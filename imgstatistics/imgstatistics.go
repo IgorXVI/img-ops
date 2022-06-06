@@ -12,15 +12,31 @@ import (
 )
 
 func makePixelHist(colorName string, pixelValues []uint8) (*bytes.Buffer, error) {
-	var values plotter.Values
+	pixelAmountMap := make(map[uint8]uint)
+
+	for i := 0; i < 256; i++ {
+		pixelAmountMap[uint8(i)] = 0
+	}
+
 	for i := 0; i < len(pixelValues); i++ {
-		values = append(values, float64(pixelValues[i]))
+		pixelAmountMap[pixelValues[i]]++
+	}
+
+	var values plotter.XYs
+
+	for i := 0; i < 256; i++ {
+		newValue := plotter.XY{
+			Y: float64(pixelAmountMap[uint8(i)]),
+			X: float64(i),
+		}
+
+		values = append(values, newValue)
 	}
 
 	p := plot.New()
 	p.Title.Text = colorName
 
-	hist, err := plotter.NewHist(values, 256)
+	hist, err := plotter.NewHistogram(values, 256)
 	if err != nil {
 		return nil, err
 	}
