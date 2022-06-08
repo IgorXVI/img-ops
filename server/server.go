@@ -283,14 +283,38 @@ func StartServer() {
 		sendMatrixAsImg(context, result)
 	})
 
-	router.POST("/process-img/max-filter", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/filter/max", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		matrix, err := loadImgFromParams(context, "img")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		imgprocessing.MaxFilter(matrix)
+		imgprocessing.Filter(matrix, imgprocessing.GetMaxPixel)
+
+		sendMatrixAsImg(context, matrix)
+	})
+
+	router.POST("/process-img/filter/min", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		imgprocessing.Filter(matrix, imgprocessing.GetMinPixel)
+
+		sendMatrixAsImg(context, matrix)
+	})
+
+	router.POST("/process-img/filter/avg", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		imgprocessing.Filter(matrix, imgprocessing.GetPixelsAvg)
 
 		sendMatrixAsImg(context, matrix)
 	})

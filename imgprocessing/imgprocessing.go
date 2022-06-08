@@ -419,7 +419,7 @@ func CopyMatrix(matrix *[][][3]uint8) *[][][3]uint8 {
 	return &newMatrix
 }
 
-func getMaxPixel(pixels []uint8) uint8 {
+func GetMaxPixel(pixels []uint8) uint8 {
 	var maxPixel uint8 = 0
 
 	for i := 0; i < len(pixels); i++ {
@@ -431,8 +431,8 @@ func getMaxPixel(pixels []uint8) uint8 {
 	return maxPixel
 }
 
-func getMinPixel(pixels []uint8) uint8 {
-	var minPixel uint8 = 0
+func GetMinPixel(pixels []uint8) uint8 {
+	var minPixel uint8 = 255
 
 	for i := 0; i < len(pixels); i++ {
 		if minPixel > pixels[i] {
@@ -443,7 +443,7 @@ func getMinPixel(pixels []uint8) uint8 {
 	return minPixel
 }
 
-func getPixelsAvg(pixels []uint8) uint8 {
+func GetPixelsAvg(pixels []uint8) uint8 {
 	var sum float32 = 0
 
 	arrSize := len(pixels)
@@ -477,7 +477,7 @@ func applyOperationOnRGBPixels(RGBPixels [][3]uint8, operation func(pixels []uin
 	return result
 }
 
-func MaxFilter(matrix *[][][3]uint8) {
+func Filter(matrix *[][][3]uint8, operation func(pixels []uint8) uint8) {
 	width := len(*matrix)
 	height := len((*matrix)[0])
 
@@ -499,7 +499,7 @@ func MaxFilter(matrix *[][][3]uint8) {
 				(*matrix)[x+1][y-1],
 			}
 
-			(*matrix)[x][y] = applyOperationOnRGBPixels(neighbors, getMaxPixel)
+			(*matrix)[x][y] = applyOperationOnRGBPixels(neighbors, operation)
 		}
 	}
 }
