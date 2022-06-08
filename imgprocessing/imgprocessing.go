@@ -374,18 +374,18 @@ func ResizeNearestNeighbor(matrix *[][][3]uint8, newWidth uint64, newHeight uint
 	width := len(*matrix)
 	height := len((*matrix)[0])
 
-	scaleX := float64(newWidth) / float64(width)
-	scaleY := float64(newHeight) / float64(height)
+	scaleX := 1 / (float64(newWidth) / float64(width))
+	scaleY := 1 / (float64(newHeight) / float64(height))
 
 	var newMatrix [][][3]uint8
 
 	for x := 0; x < int(newWidth); x++ {
 		newX := [][3]uint8{}
 
-		oldX := int(math.Min(math.Round(float64(x)/scaleX), float64(width-1)))
+		oldX := int(math.Min(float64(x)*scaleX, float64(width-1)))
 
 		for y := 0; y < int(newHeight); y++ {
-			oldY := int(math.Min(math.Round(float64(y)/scaleY), float64(height-1)))
+			oldY := int(math.Min(float64(y)*scaleY, float64(height-1)))
 
 			newY := (*matrix)[oldX][oldY]
 
@@ -417,4 +417,89 @@ func CopyMatrix(matrix *[][][3]uint8) *[][][3]uint8 {
 	}
 
 	return &newMatrix
+}
+
+func getMaxPixel(pixels []uint8) uint8 {
+	var maxPixel uint8 = 0
+
+	for i := 0; i < len(pixels); i++ {
+		if maxPixel < pixels[i] {
+			maxPixel = pixels[i]
+		}
+	}
+
+	return maxPixel
+}
+
+func getMinPixel(pixels []uint8) uint8 {
+	var minPixel uint8 = 0
+
+	for i := 0; i < len(pixels); i++ {
+		if minPixel > pixels[i] {
+			minPixel = pixels[i]
+		}
+	}
+
+	return minPixel
+}
+
+func getPixelsAvg(pixels []uint8) uint8 {
+	var sum float32 = 0
+
+	arrSize := len(pixels)
+
+	for i := 0; i < arrSize; i++ {
+		sum += float32(pixels[i])
+	}
+
+	result := uint8(sum / float32(arrSize))
+
+	return result
+}
+
+func applyOperationOnRGBPixels(RGBPixels [][3]uint8, operation func(pixels []uint8) uint8) [3]uint8 {
+	var redPixels []uint8
+	var greenPixels []uint8
+	var bluePixels []uint8
+
+	for i := 0; i < len(RGBPixels); i++ {
+		redPixels = append(redPixels, RGBPixels[i][0])
+		greenPixels = append(greenPixels, RGBPixels[i][1])
+		bluePixels = append(bluePixels, RGBPixels[i][2])
+	}
+
+	redResult := operation(redPixels)
+	greenResult := operation(greenPixels)
+	blueResult := operation(bluePixels)
+
+	result := [3]uint8{redResult, greenResult, blueResult}
+
+	return result
+}
+
+func MaxFilter(matrix *[][][3]uint8) {
+	width := len(*matrix)
+	height := len((*matrix)[0])
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			if x == 0 || y == 0 || x == width-1 || y == height-1 {
+				continue
+			}
+
+			neighbors := [][3]uint8{
+				(*matrix)[x][y],
+				(*matrix)[x][y-1],
+				(*matrix)[x][y+1],
+				(*matrix)[x-1][y],
+				(*matrix)[x+1][y],
+				(*matrix)[x-1][y-1],
+				(*matrix)[x+1][y+1],
+				(*matrix)[x-1][y+1],
+				(*matrix)[x+1][y-1],
+			}
+
+			(*matrix)[x][y] = applyOperationOnRGBPixels(neighbors, getMaxPixel)
+		}
+	}
 }

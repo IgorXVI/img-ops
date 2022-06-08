@@ -283,5 +283,17 @@ func StartServer() {
 		sendMatrixAsImg(context, result)
 	})
 
+	router.POST("/process-img/max-filter", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		imgprocessing.MaxFilter(matrix)
+
+		sendMatrixAsImg(context, matrix)
+	})
+
 	router.Run("localhost:9090")
 }
