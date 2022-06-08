@@ -457,33 +457,19 @@ func GetPixelsAvg(pixels []uint8) uint8 {
 	return result
 }
 
-func applyOperationOnRGBPixels(RGBPixels [][3]uint8, operation func(pixels []uint8) uint8) [3]uint8 {
-	var redPixels []uint8
-	var greenPixels []uint8
-	var bluePixels []uint8
-
-	for i := 0; i < len(RGBPixels); i++ {
-		redPixels = append(redPixels, RGBPixels[i][0])
-		greenPixels = append(greenPixels, RGBPixels[i][1])
-		bluePixels = append(bluePixels, RGBPixels[i][2])
-	}
-
-	redResult := operation(redPixels)
-	greenResult := operation(greenPixels)
-	blueResult := operation(bluePixels)
-
-	result := [3]uint8{redResult, greenResult, blueResult}
-
-	return result
-}
-
-func Filter(matrix *[][][3]uint8, operation func(pixels []uint8) uint8) {
+func ApplyFilter(matrix *[][][3]uint8, operation func(pixels []uint8) uint8) *[][][3]uint8 {
 	width := len(*matrix)
 	height := len((*matrix)[0])
 
+	var newMatrix [][][3]uint8
+
 	for x := 0; x < width; x++ {
+		newX := [][3]uint8{}
+
 		for y := 0; y < height; y++ {
+
 			if x == 0 || y == 0 || x == width-1 || y == height-1 {
+				newX = append(newX, (*matrix)[x][y])
 				continue
 			}
 
@@ -499,7 +485,27 @@ func Filter(matrix *[][][3]uint8, operation func(pixels []uint8) uint8) {
 				(*matrix)[x+1][y-1],
 			}
 
-			(*matrix)[x][y] = applyOperationOnRGBPixels(neighbors, operation)
+			var redPixels []uint8
+			var greenPixels []uint8
+			var bluePixels []uint8
+
+			for i := 0; i < len(neighbors); i++ {
+				redPixels = append(redPixels, neighbors[i][0])
+				greenPixels = append(greenPixels, neighbors[i][1])
+				bluePixels = append(bluePixels, neighbors[i][2])
+			}
+
+			redResult := operation(redPixels)
+			greenResult := operation(greenPixels)
+			blueResult := operation(bluePixels)
+
+			result := [3]uint8{redResult, greenResult, blueResult}
+
+			newX = append(newX, result)
 		}
+
+		newMatrix = append(newMatrix, newX)
 	}
+
+	return &newMatrix
 }

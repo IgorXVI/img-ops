@@ -290,9 +290,9 @@ func StartServer() {
 			return
 		}
 
-		imgprocessing.Filter(matrix, imgprocessing.GetMaxPixel)
+		result := imgprocessing.ApplyFilter(matrix, imgprocessing.GetMaxPixel)
 
-		sendMatrixAsImg(context, matrix)
+		sendMatrixAsImg(context, result)
 	})
 
 	router.POST("/process-img/filter/min", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
@@ -302,9 +302,9 @@ func StartServer() {
 			return
 		}
 
-		imgprocessing.Filter(matrix, imgprocessing.GetMinPixel)
+		result := imgprocessing.ApplyFilter(matrix, imgprocessing.GetMinPixel)
 
-		sendMatrixAsImg(context, matrix)
+		sendMatrixAsImg(context, result)
 	})
 
 	router.POST("/process-img/filter/avg", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
@@ -314,9 +314,9 @@ func StartServer() {
 			return
 		}
 
-		imgprocessing.Filter(matrix, imgprocessing.GetPixelsAvg)
+		result := imgprocessing.ApplyFilter(matrix, imgprocessing.GetPixelsAvg)
 
-		sendMatrixAsImg(context, matrix)
+		sendMatrixAsImg(context, result)
 	})
 
 	router.Run("localhost:9090")
