@@ -419,47 +419,13 @@ func CopyMatrix(matrix *[][][3]uint8) *[][][3]uint8 {
 	return &newMatrix
 }
 
-func GetMaxPixel(pixels []uint8) uint8 {
-	var maxPixel uint8 = 0
-
-	for i := 0; i < len(pixels); i++ {
-		if maxPixel < pixels[i] {
-			maxPixel = pixels[i]
-		}
-	}
-
-	return maxPixel
-}
-
-func GetMinPixel(pixels []uint8) uint8 {
-	var minPixel uint8 = 255
-
-	for i := 0; i < len(pixels); i++ {
-		if minPixel > pixels[i] {
-			minPixel = pixels[i]
-		}
-	}
-
-	return minPixel
-}
-
-func GetPixelsAvg(pixels []uint8) uint8 {
-	var sum float32 = 0
-
-	arrSize := len(pixels)
-
-	for i := 0; i < arrSize; i++ {
-		sum += float32(pixels[i])
-	}
-
-	result := uint8(sum / float32(arrSize))
-
-	return result
-}
-
-func ApplyFilter(matrix *[][][3]uint8, operation func(pixels []uint8) uint8) *[][][3]uint8 {
+func applyFilter(matrix *[][][3]uint8, mask [][]float64, operation func(pixels []float64) uint8) *[][][3]uint8 {
 	width := len(*matrix)
 	height := len((*matrix)[0])
+
+	maskSize := len(mask)
+
+	maskCenter := maskSize / 2
 
 	var newMatrix [][][3]uint8
 
@@ -467,32 +433,30 @@ func ApplyFilter(matrix *[][][3]uint8, operation func(pixels []uint8) uint8) *[]
 		newX := [][3]uint8{}
 
 		for y := 0; y < height; y++ {
+			var redPixels []float64
+			var greenPixels []float64
+			var bluePixels []float64
 
-			if x == 0 || y == 0 || x == width-1 || y == height-1 {
-				newX = append(newX, (*matrix)[x][y])
-				continue
-			}
+			for maskX := 0; maskX < maskSize; maskX++ {
+				neighborX := x + maskX - maskCenter
 
-			neighbors := [][3]uint8{
-				(*matrix)[x][y],
-				(*matrix)[x][y-1],
-				(*matrix)[x][y+1],
-				(*matrix)[x-1][y],
-				(*matrix)[x+1][y],
-				(*matrix)[x-1][y-1],
-				(*matrix)[x+1][y+1],
-				(*matrix)[x-1][y+1],
-				(*matrix)[x+1][y-1],
-			}
+				for maskY := 0; maskY < maskSize; maskY++ {
+					neighborY := y + maskY - maskCenter
 
-			var redPixels []uint8
-			var greenPixels []uint8
-			var bluePixels []uint8
+					neighbor := [3]uint8{0, 0, 0}
 
-			for i := 0; i < len(neighbors); i++ {
-				redPixels = append(redPixels, neighbors[i][0])
-				greenPixels = append(greenPixels, neighbors[i][1])
-				bluePixels = append(bluePixels, neighbors[i][2])
+					if neighborX >= 0 && neighborX < width && neighborY >= 0 && neighborY < height {
+						neighbor = (*matrix)[neighborX][neighborY]
+					}
+
+					redPixel := float64(neighbor[0]) * mask[maskX][maskY]
+					greenPixel := float64(neighbor[1]) * mask[maskX][maskY]
+					bluePixel := float64(neighbor[2]) * mask[maskX][maskY]
+
+					redPixels = append(redPixels, redPixel)
+					greenPixels = append(greenPixels, greenPixel)
+					bluePixels = append(bluePixels, bluePixel)
+				}
 			}
 
 			redResult := operation(redPixels)
@@ -508,4 +472,72 @@ func ApplyFilter(matrix *[][][3]uint8, operation func(pixels []uint8) uint8) *[]
 	}
 
 	return &newMatrix
+}
+
+func MaxFilter(matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := [][]float64{
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+	}
+
+	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
+		var maxPixel float64 = 0
+
+		for i := 0; i < len(pixels); i++ {
+			if maxPixel < pixels[i] {
+				maxPixel = pixels[i]
+			}
+		}
+
+		return uint8(maxPixel)
+	})
+
+	return result
+}
+
+func MinFilter(matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := [][]float64{
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+	}
+
+	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
+		minPixel := math.Inf(1)
+
+		for i := 0; i < len(pixels); i++ {
+			if minPixel > pixels[i] {
+				minPixel = pixels[i]
+			}
+		}
+
+		return uint8(minPixel)
+	})
+
+	return result
+}
+
+func AvgFilter(matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := [][]float64{
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+	}
+
+	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
+		var sum float64 = 0
+
+		arrSize := len(pixels)
+
+		for i := 0; i < arrSize; i++ {
+			sum += pixels[i]
+		}
+
+		avg := uint8(sum / float64(arrSize))
+
+		return avg
+	})
+
+	return result
 }

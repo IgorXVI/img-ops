@@ -290,7 +290,7 @@ func StartServer() {
 			return
 		}
 
-		result := imgprocessing.ApplyFilter(matrix, imgprocessing.GetMaxPixel)
+		result := imgprocessing.MaxFilter(matrix)
 
 		sendMatrixAsImg(context, result)
 	})
@@ -302,7 +302,7 @@ func StartServer() {
 			return
 		}
 
-		result := imgprocessing.ApplyFilter(matrix, imgprocessing.GetMinPixel)
+		result := imgprocessing.MinFilter(matrix)
 
 		sendMatrixAsImg(context, result)
 	})
@@ -314,7 +314,7 @@ func StartServer() {
 			return
 		}
 
-		result := imgprocessing.ApplyFilter(matrix, imgprocessing.GetPixelsAvg)
+		result := imgprocessing.AvgFilter(matrix)
 
 		sendMatrixAsImg(context, result)
 	})
