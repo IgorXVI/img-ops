@@ -482,7 +482,7 @@ func MaxFilter(matrix *[][][3]uint8) *[][][3]uint8 {
 	}
 
 	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
-		var maxPixel float64 = 0
+		var maxPixel float64 = math.Inf(-1)
 
 		for i := 0; i < len(pixels); i++ {
 			if maxPixel < pixels[i] {
