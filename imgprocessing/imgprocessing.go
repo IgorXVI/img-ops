@@ -433,6 +433,12 @@ func applyFilter(matrix *[][][3]uint8, mask [][]float64, operation func(pixels [
 		newX := [][3]uint8{}
 
 		for y := 0; y < height; y++ {
+
+			if x == 0 || y == 0 || x == width-1 || y == height-1 {
+				newX = append(newX, (*matrix)[x][y])
+				continue
+			}
+
 			var redPixels []float64
 			var greenPixels []float64
 			var bluePixels []float64
