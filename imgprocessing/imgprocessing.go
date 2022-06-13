@@ -1,6 +1,9 @@
 package imgprocessing
 
-import "math"
+import (
+	"math"
+	"sort"
+)
 
 //parte que processa as images
 
@@ -543,6 +546,40 @@ func AvgFilter(matrix *[][][3]uint8) *[][][3]uint8 {
 		avg := uint8(sum / float64(arrSize))
 
 		return avg
+	})
+
+	return result
+}
+
+func MeanFilter(matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := [][]float64{
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+	}
+
+	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
+		arrCenter := len(pixels) / 2
+
+		sortedPixels := sort.Float64Slice(pixels)
+
+		return uint8(sortedPixels[arrCenter])
+	})
+
+	return result
+}
+
+func OrderFilter(index int, matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := [][]float64{
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+	}
+
+	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
+		sortedPixels := sort.Float64Slice(pixels)
+
+		return uint8(sortedPixels[index])
 	})
 
 	return result

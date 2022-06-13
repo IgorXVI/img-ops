@@ -1,10 +1,12 @@
 package server
 
 import (
+	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 
 	"img-ops/imgconversion"
 	"img-ops/imgprocessing"
@@ -315,6 +317,41 @@ func StartServer() {
 		}
 
 		result := imgprocessing.AvgFilter(matrix)
+
+		sendMatrixAsImg(context, result)
+	})
+
+	router.POST("/process-img/filter/mean", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		result := imgprocessing.MeanFilter(matrix)
+
+		sendMatrixAsImg(context, result)
+	})
+
+	router.POST("/process-img/filter/order/:index", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		index, err := strconv.ParseInt(context.Param("index"), 10, 64)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		if index < 0 || index > 8 {
+			sendInputError(context, errors.New("index must be between 0 and 8"))
+			return
+		}
+
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		result := imgprocessing.OrderFilter(int(index), matrix)
 
 		sendMatrixAsImg(context, result)
 	})
