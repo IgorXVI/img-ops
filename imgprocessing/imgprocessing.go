@@ -561,9 +561,9 @@ func MeanFilter(matrix *[][][3]uint8) *[][][3]uint8 {
 	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
 		arrCenter := len(pixels) / 2
 
-		sortedPixels := sort.Float64Slice(pixels)
+		sort.Float64s(pixels)
 
-		return uint8(sortedPixels[arrCenter])
+		return uint8(pixels[arrCenter])
 	})
 
 	return result
@@ -577,9 +577,9 @@ func OrderFilter(index int, matrix *[][][3]uint8) *[][][3]uint8 {
 	}
 
 	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
-		sortedPixels := sort.Float64Slice(pixels)
+		sort.Float64s(pixels)
 
-		return uint8(sortedPixels[index])
+		return uint8(pixels[index])
 	})
 
 	return result
