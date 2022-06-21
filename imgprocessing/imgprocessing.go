@@ -483,6 +483,18 @@ func applyFilter(matrix *[][][3]uint8, mask [][]float64, operation func(pixels [
 	return &newMatrix
 }
 
+func getMaxPixel(pixels []float64) uint8 {
+	var maxPixel float64 = math.Inf(-1)
+
+	for i := 0; i < len(pixels); i++ {
+		if maxPixel < pixels[i] {
+			maxPixel = pixels[i]
+		}
+	}
+
+	return uint8(maxPixel)
+}
+
 func MaxFilter(matrix *[][][3]uint8) *[][][3]uint8 {
 	mask := [][]float64{
 		{1, 1, 1},
@@ -490,19 +502,21 @@ func MaxFilter(matrix *[][][3]uint8) *[][][3]uint8 {
 		{1, 1, 1},
 	}
 
-	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
-		var maxPixel float64 = math.Inf(-1)
-
-		for i := 0; i < len(pixels); i++ {
-			if maxPixel < pixels[i] {
-				maxPixel = pixels[i]
-			}
-		}
-
-		return uint8(maxPixel)
-	})
+	result := applyFilter(matrix, mask, getMaxPixel)
 
 	return result
+}
+
+func getMinPixel(pixels []float64) uint8 {
+	minPixel := math.Inf(1)
+
+	for i := 0; i < len(pixels); i++ {
+		if minPixel > pixels[i] {
+			minPixel = pixels[i]
+		}
+	}
+
+	return uint8(minPixel)
 }
 
 func MinFilter(matrix *[][][3]uint8) *[][][3]uint8 {
@@ -512,17 +526,7 @@ func MinFilter(matrix *[][][3]uint8) *[][][3]uint8 {
 		{1, 1, 1},
 	}
 
-	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
-		minPixel := math.Inf(1)
-
-		for i := 0; i < len(pixels); i++ {
-			if minPixel > pixels[i] {
-				minPixel = pixels[i]
-			}
-		}
-
-		return uint8(minPixel)
-	})
+	result := applyFilter(matrix, mask, getMinPixel)
 
 	return result
 }
@@ -584,3 +588,36 @@ func OrderFilter(index int, matrix *[][][3]uint8) *[][][3]uint8 {
 
 	return result
 }
+
+func ConservativeSmoothingFilter(matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := [][]float64{
+		{1, 1, 1},
+		{1, 1, 1},
+		{1, 1, 1},
+	}
+
+	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
+		arrCenter := len(pixels) / 2
+
+		centerPixel := uint8(pixels[arrCenter])
+
+		max := getMaxPixel(pixels)
+
+		min := getMinPixel(pixels)
+
+		var result uint8
+
+		if max < centerPixel {
+			result = max
+		} else if min > centerPixel {
+			result = min
+		} else {
+			result = centerPixel
+		}
+
+		return result
+	})
+
+	return result
+}
+

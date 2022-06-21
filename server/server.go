@@ -356,5 +356,17 @@ func StartServer() {
 		sendMatrixAsImg(context, result)
 	})
 
+	router.POST("/process-img/filter/conservative-smoothing", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		result := imgprocessing.ConservativeSmoothingFilter(matrix)
+
+		sendMatrixAsImg(context, result)
+	})
+
 	router.Run("localhost:9090")
 }
