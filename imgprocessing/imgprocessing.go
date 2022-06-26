@@ -591,9 +591,18 @@ func ConservativeSmoothingFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uin
 
 		centerPixel := uint8(pixels[arrCenter])
 
-		max := getMaxPixel(pixels)
+		nonCenterPixels := []float64{}
+		for i, pixel := range pixels {
+			if i == arrCenter {
+				continue
+			}
 
-		min := getMinPixel(pixels)
+			nonCenterPixels = append(nonCenterPixels, pixel)
+		}
+
+		max := getMaxPixel(nonCenterPixels)
+
+		min := getMinPixel(nonCenterPixels)
 
 		var result uint8
 
