@@ -495,18 +495,6 @@ func getMaxPixel(pixels []float64) uint8 {
 	return uint8(maxPixel)
 }
 
-func MaxFilter(matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := [][]float64{
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1},
-	}
-
-	result := applyFilter(matrix, mask, getMaxPixel)
-
-	return result
-}
-
 func getMinPixel(pixels []float64) uint8 {
 	minPixel := math.Inf(1)
 
@@ -519,24 +507,38 @@ func getMinPixel(pixels []float64) uint8 {
 	return uint8(minPixel)
 }
 
-func MinFilter(matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := [][]float64{
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1},
+func makeMask(size int) [][]float64 {
+	mask := [][]float64{}
+
+	for i := 0; i < size; i++ {
+		maskRow := []float64{}
+		for j := 0; j < size; j++ {
+			maskRow = append(maskRow, 1)
+		}
+		mask = append(mask, maskRow)
 	}
+
+	return mask
+}
+
+func MaxFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := makeMask(maskSize)
+
+	result := applyFilter(matrix, mask, getMaxPixel)
+
+	return result
+}
+
+func MinFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := makeMask(maskSize)
 
 	result := applyFilter(matrix, mask, getMinPixel)
 
 	return result
 }
 
-func AvgFilter(matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := [][]float64{
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1},
-	}
+func AvgFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := makeMask(maskSize)
 
 	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
 		var sum float64 = 0
@@ -555,12 +557,8 @@ func AvgFilter(matrix *[][][3]uint8) *[][][3]uint8 {
 	return result
 }
 
-func MeanFilter(matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := [][]float64{
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1},
-	}
+func MeanFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := makeMask(maskSize)
 
 	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
 		arrCenter := len(pixels) / 2
@@ -573,12 +571,8 @@ func MeanFilter(matrix *[][][3]uint8) *[][][3]uint8 {
 	return result
 }
 
-func OrderFilter(index int, matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := [][]float64{
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1},
-	}
+func OrderFilter(maskSize int, index int, matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := makeMask(maskSize)
 
 	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
 		sort.Float64s(pixels)
@@ -589,12 +583,8 @@ func OrderFilter(index int, matrix *[][][3]uint8) *[][][3]uint8 {
 	return result
 }
 
-func ConservativeSmoothingFilter(matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := [][]float64{
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1},
-	}
+func ConservativeSmoothingFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := makeMask(maskSize)
 
 	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
 		arrCenter := len(pixels) / 2
@@ -620,4 +610,3 @@ func ConservativeSmoothingFilter(matrix *[][][3]uint8) *[][][3]uint8 {
 
 	return result
 }
-

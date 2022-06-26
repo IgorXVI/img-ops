@@ -68,6 +68,16 @@ func getFactorFromParams(context *gin.Context) (float32, error) {
 	return factor, nil
 }
 
+func getMaskSizeFromParams(context *gin.Context) (int, error) {
+	maskSizeInt64, err := strconv.ParseInt(context.Param("maskSize"), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	maskSize := int(maskSizeInt64)
+
+	return maskSize, nil
+}
+
 func handleTwoImages(context *gin.Context, pixelOperation func(pixel1 uint8, pixel2 uint8) uint8) {
 	matrix1, err := loadImgFromParams(context, "img1")
 	if err != nil {
@@ -285,63 +295,97 @@ func StartServer() {
 		sendMatrixAsImg(context, result)
 	})
 
-	router.POST("/process-img/filter/max", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/filter/max/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		matrix, err := loadImgFromParams(context, "img")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		result := imgprocessing.MaxFilter(matrix)
+		maskSize, err := getMaskSizeFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		result := imgprocessing.MaxFilter(maskSize, matrix)
 
 		sendMatrixAsImg(context, result)
 	})
 
-	router.POST("/process-img/filter/min", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/filter/min/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		matrix, err := loadImgFromParams(context, "img")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		result := imgprocessing.MinFilter(matrix)
+		maskSize, err := getMaskSizeFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		result := imgprocessing.MinFilter(maskSize, matrix)
 
 		sendMatrixAsImg(context, result)
 	})
 
-	router.POST("/process-img/filter/avg", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/filter/avg/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		matrix, err := loadImgFromParams(context, "img")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		result := imgprocessing.AvgFilter(matrix)
+		maskSize, err := getMaskSizeFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		result := imgprocessing.AvgFilter(maskSize, matrix)
 
 		sendMatrixAsImg(context, result)
 	})
 
-	router.POST("/process-img/filter/mean", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/filter/mean/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		matrix, err := loadImgFromParams(context, "img")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		result := imgprocessing.MeanFilter(matrix)
+		maskSize, err := getMaskSizeFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		result := imgprocessing.MeanFilter(maskSize, matrix)
 
 		sendMatrixAsImg(context, result)
 	})
 
-	router.POST("/process-img/filter/order/:index", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		index, err := strconv.ParseInt(context.Param("index"), 10, 64)
+	router.POST("/process-img/filter/order/:maskSize/:index", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		maskSize, err := getMaskSizeFromParams(context)
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		if index < 0 || index > 8 {
-			sendInputError(context, errors.New("index must be between 0 and 8"))
+		index64, err := strconv.ParseInt(context.Param("index"), 10, 64)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+		index := int(index64)
+
+		maxIndex := maskSize*maskSize - 1
+		maxIndexStr := strconv.Itoa(int(maxIndex))
+
+		if index < 0 || index > maxIndex {
+			sendInputError(context, errors.New("index must be between 0 and "+maxIndexStr))
 			return
 		}
 
@@ -351,19 +395,25 @@ func StartServer() {
 			return
 		}
 
-		result := imgprocessing.OrderFilter(int(index), matrix)
+		result := imgprocessing.OrderFilter(maskSize, index, matrix)
 
 		sendMatrixAsImg(context, result)
 	})
 
-	router.POST("/process-img/filter/conservative-smoothing", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+	router.POST("/process-img/filter/conservative-smoothing/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
 		matrix, err := loadImgFromParams(context, "img")
 		if err != nil {
 			sendInputError(context, err)
 			return
 		}
 
-		result := imgprocessing.ConservativeSmoothingFilter(matrix)
+		maskSize, err := getMaskSizeFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		result := imgprocessing.ConservativeSmoothingFilter(maskSize, matrix)
 
 		sendMatrixAsImg(context, result)
 	})
