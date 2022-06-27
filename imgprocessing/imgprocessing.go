@@ -422,7 +422,9 @@ func CopyMatrix(matrix *[][][3]uint8) *[][][3]uint8 {
 	return &newMatrix
 }
 
-func applyFilter(matrix *[][][3]uint8, mask [][]float64, operation func(pixels []float64) uint8) *[][][3]uint8 {
+//função generica para qualquer filtro
+
+func ApplyFilter(matrix *[][][3]uint8, mask [][]float64, operation func(pixels []float64) uint8) *[][][3]uint8 {
 	width := len(*matrix)
 	height := len((*matrix)[0])
 
@@ -483,31 +485,9 @@ func applyFilter(matrix *[][][3]uint8, mask [][]float64, operation func(pixels [
 	return &newMatrix
 }
 
-func getMaxPixel(pixels []float64) uint8 {
-	var maxPixel float64 = math.Inf(-1)
+//funções para criar mascaras de filtros
 
-	for i := 0; i < len(pixels); i++ {
-		if maxPixel < pixels[i] {
-			maxPixel = pixels[i]
-		}
-	}
-
-	return uint8(maxPixel)
-}
-
-func getMinPixel(pixels []float64) uint8 {
-	minPixel := math.Inf(1)
-
-	for i := 0; i < len(pixels); i++ {
-		if minPixel > pixels[i] {
-			minPixel = pixels[i]
-		}
-	}
-
-	return uint8(minPixel)
-}
-
-func makeMask(size int) [][]float64 {
+func MakeMaskOfOnes(size int) [][]float64 {
 	mask := [][]float64{}
 
 	for i := 0; i < size; i++ {
@@ -521,105 +501,6 @@ func makeMask(size int) [][]float64 {
 	return mask
 }
 
-func MaxFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := makeMask(maskSize)
-
-	result := applyFilter(matrix, mask, getMaxPixel)
-
-	return result
-}
-
-func MinFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := makeMask(maskSize)
-
-	result := applyFilter(matrix, mask, getMinPixel)
-
-	return result
-}
-
-func AvgFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := makeMask(maskSize)
-
-	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
-		var sum float64 = 0
-
-		arrSize := len(pixels)
-
-		for i := 0; i < arrSize; i++ {
-			sum += pixels[i]
-		}
-
-		avg := uint8(sum / float64(arrSize))
-
-		return avg
-	})
-
-	return result
-}
-
-func MeanFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := makeMask(maskSize)
-
-	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
-		arrCenter := len(pixels) / 2
-
-		sort.Float64s(pixels)
-
-		return uint8(pixels[arrCenter])
-	})
-
-	return result
-}
-
-func OrderFilter(maskSize int, index int, matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := makeMask(maskSize)
-
-	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
-		sort.Float64s(pixels)
-
-		return uint8(pixels[index])
-	})
-
-	return result
-}
-
-func ConservativeSmoothingFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := makeMask(maskSize)
-
-	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
-		arrCenter := len(pixels) / 2
-
-		centerPixel := uint8(pixels[arrCenter])
-
-		nonCenterPixels := []float64{}
-		for i, pixel := range pixels {
-			if i == arrCenter {
-				continue
-			}
-
-			nonCenterPixels = append(nonCenterPixels, pixel)
-		}
-
-		max := getMaxPixel(nonCenterPixels)
-
-		min := getMinPixel(nonCenterPixels)
-
-		var result uint8
-
-		if max < centerPixel {
-			result = max
-		} else if min > centerPixel {
-			result = min
-		} else {
-			result = centerPixel
-		}
-
-		return result
-	})
-
-	return result
-}
-
 func calcGaussian2d(x float64, y float64, sigma float64) float64 {
 	y2 := math.Pow(y, 2)
 	x2 := math.Pow(x, 2)
@@ -630,7 +511,7 @@ func calcGaussian2d(x float64, y float64, sigma float64) float64 {
 	return math.Pow(math.E, eExp) / (2 * math.Pi * sigma2)
 }
 
-func makeGaussMask(size int, sigma float64) [][]float64 {
+func MakeGaussMask(size int, sigma float64) [][]float64 {
 	halfSize := size / 2
 
 	sum := 0.0
@@ -660,16 +541,101 @@ func makeGaussMask(size int, sigma float64) [][]float64 {
 	return mask
 }
 
-func GuassianFilter(maskSize int, sigma float64, matrix *[][][3]uint8) *[][][3]uint8 {
-	mask := makeGaussMask(maskSize, sigma)
+//funções para calcular valor do pixel alvo nos filtros
 
-	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
-		sum := 0.0
-		for _, pixel := range pixels {
-			sum += pixel
+func PixelsMax(pixels []float64) uint8 {
+	var maxPixel float64 = math.Inf(-1)
+
+	for i := 0; i < len(pixels); i++ {
+		if maxPixel < pixels[i] {
+			maxPixel = pixels[i]
 		}
-		return uint8(sum)
-	})
+	}
+
+	return uint8(maxPixel)
+}
+
+func PixelsMin(pixels []float64) uint8 {
+	minPixel := math.Inf(1)
+
+	for i := 0; i < len(pixels); i++ {
+		if minPixel > pixels[i] {
+			minPixel = pixels[i]
+		}
+	}
+
+	return uint8(minPixel)
+}
+
+func PixelsAvg(pixels []float64) uint8 {
+	var sum float64 = 0
+
+	arrSize := len(pixels)
+
+	for i := 0; i < arrSize; i++ {
+		sum += pixels[i]
+	}
+
+	avg := uint8(sum / float64(arrSize))
+
+	return avg
+}
+
+func PixelsMean(pixels []float64) uint8 {
+	arrCenter := len(pixels) / 2
+
+	sort.Float64s(pixels)
+
+	return uint8(pixels[arrCenter])
+}
+
+func PixelsSum(pixels []float64) uint8 {
+	sum := 0.0
+	for _, pixel := range pixels {
+		sum += pixel
+	}
+	return uint8(sum)
+}
+
+func GetPixelByIndexInSortedArr(pixels []float64, index int) uint8 {
+	sort.Float64s(pixels)
+
+	return uint8(pixels[index])
+}
+
+func GetPixelByIndexInSortedArrCurry(index int) func(pixels []float64) uint8 {
+	return func(pixels []float64) uint8 {
+		return GetPixelByIndexInSortedArr(pixels, index)
+	}
+}
+
+func GetPixelBoundedByNeighborsRange(pixels []float64) uint8 {
+	arrCenter := len(pixels) / 2
+
+	centerPixel := uint8(pixels[arrCenter])
+
+	nonCenterPixels := []float64{}
+	for i, pixel := range pixels {
+		if i == arrCenter {
+			continue
+		}
+
+		nonCenterPixels = append(nonCenterPixels, pixel)
+	}
+
+	max := PixelsMax(nonCenterPixels)
+
+	min := PixelsMin(nonCenterPixels)
+
+	var result uint8
+
+	if max < centerPixel {
+		result = max
+	} else if min > centerPixel {
+		result = min
+	} else {
+		result = centerPixel
+	}
 
 	return result
 }

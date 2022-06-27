@@ -108,6 +108,26 @@ func handleOneImage(context *gin.Context, pixelOperation func(pixel uint8) uint8
 	sendMatrixAsImg(context, matrix)
 }
 
+func handleMaskOfOnesFilter(context *gin.Context, operation func(pixels []float64) uint8) {
+	matrix, err := loadImgFromParams(context, "img")
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
+
+	maskSize, err := getMaskSizeFromParams(context)
+	if err != nil {
+		sendInputError(context, err)
+		return
+	}
+
+	mask := imgprocessing.MakeMaskOfOnes(maskSize)
+
+	result := imgprocessing.ApplyFilter(matrix, mask, operation)
+
+	sendMatrixAsImg(context, result)
+}
+
 func corsMiddleware(context *gin.Context) {
 	context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	context.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -296,75 +316,23 @@ func StartServer() {
 	})
 
 	router.POST("/process-img/filter/max/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		matrix, err := loadImgFromParams(context, "img")
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		maskSize, err := getMaskSizeFromParams(context)
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		result := imgprocessing.MaxFilter(maskSize, matrix)
-
-		sendMatrixAsImg(context, result)
+		handleMaskOfOnesFilter(context, imgprocessing.PixelsMax)
 	})
 
 	router.POST("/process-img/filter/min/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		matrix, err := loadImgFromParams(context, "img")
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		maskSize, err := getMaskSizeFromParams(context)
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		result := imgprocessing.MinFilter(maskSize, matrix)
-
-		sendMatrixAsImg(context, result)
+		handleMaskOfOnesFilter(context, imgprocessing.PixelsMin)
 	})
 
 	router.POST("/process-img/filter/avg/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		matrix, err := loadImgFromParams(context, "img")
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		maskSize, err := getMaskSizeFromParams(context)
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		result := imgprocessing.AvgFilter(maskSize, matrix)
-
-		sendMatrixAsImg(context, result)
+		handleMaskOfOnesFilter(context, imgprocessing.PixelsAvg)
 	})
 
 	router.POST("/process-img/filter/mean/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		matrix, err := loadImgFromParams(context, "img")
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
+		handleMaskOfOnesFilter(context, imgprocessing.PixelsMean)
+	})
 
-		maskSize, err := getMaskSizeFromParams(context)
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		result := imgprocessing.MeanFilter(maskSize, matrix)
-
-		sendMatrixAsImg(context, result)
+	router.POST("/process-img/filter/conservative-smoothing/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		handleMaskOfOnesFilter(context, imgprocessing.GetPixelBoundedByNeighborsRange)
 	})
 
 	router.POST("/process-img/filter/order/:maskSize/:index", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
@@ -395,25 +363,11 @@ func StartServer() {
 			return
 		}
 
-		result := imgprocessing.OrderFilter(maskSize, index, matrix)
+		mask := imgprocessing.MakeMaskOfOnes(maskSize)
 
-		sendMatrixAsImg(context, result)
-	})
+		getPixelByIndexInSortedArr := imgprocessing.GetPixelByIndexInSortedArrCurry(index)
 
-	router.POST("/process-img/filter/conservative-smoothing/:maskSize", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
-		matrix, err := loadImgFromParams(context, "img")
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		maskSize, err := getMaskSizeFromParams(context)
-		if err != nil {
-			sendInputError(context, err)
-			return
-		}
-
-		result := imgprocessing.ConservativeSmoothingFilter(maskSize, matrix)
+		result := imgprocessing.ApplyFilter(matrix, mask, getPixelByIndexInSortedArr)
 
 		sendMatrixAsImg(context, result)
 	})
@@ -437,7 +391,9 @@ func StartServer() {
 			return
 		}
 
-		result := imgprocessing.GuassianFilter(maskSize, sigma, matrix)
+		gaussMask := imgprocessing.MakeGaussMask(maskSize, sigma)
+
+		result := imgprocessing.ApplyFilter(matrix, gaussMask, imgprocessing.PixelsSum)
 
 		sendMatrixAsImg(context, result)
 	})
