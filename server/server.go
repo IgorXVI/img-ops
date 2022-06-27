@@ -418,5 +418,29 @@ func StartServer() {
 		sendMatrixAsImg(context, result)
 	})
 
+	router.POST("/process-img/filter/gaussian/:maskSize/:sigma", corsMiddleware, maxBodySizeMiddleware, func(context *gin.Context) {
+		matrix, err := loadImgFromParams(context, "img")
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		maskSize, err := getMaskSizeFromParams(context)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		sigma, err := strconv.ParseFloat(context.Param("sigma"), 64)
+		if err != nil {
+			sendInputError(context, err)
+			return
+		}
+
+		result := imgprocessing.GuassianFilter(maskSize, sigma, matrix)
+
+		sendMatrixAsImg(context, result)
+	})
+
 	router.Run("localhost:9090")
 }

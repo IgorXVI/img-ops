@@ -619,3 +619,57 @@ func ConservativeSmoothingFilter(maskSize int, matrix *[][][3]uint8) *[][][3]uin
 
 	return result
 }
+
+func calcGaussian2d(x float64, y float64, sigma float64) float64 {
+	y2 := math.Pow(y, 2)
+	x2 := math.Pow(x, 2)
+	sigma2 := math.Pow(sigma, 2)
+
+	eExp := -(x2 + y2) / (2 * sigma2)
+
+	return math.Pow(math.E, eExp) / (2 * math.Pi * sigma2)
+}
+
+func makeGaussMask(size int, sigma float64) [][]float64 {
+	halfSize := size / 2
+
+	sum := 0.0
+
+	mask := [][]float64{}
+
+	for x := -halfSize; x <= halfSize; x++ {
+		maskRow := []float64{}
+
+		for y := -halfSize; y <= halfSize; y++ {
+			gauss := calcGaussian2d(float64(x), float64(y), sigma)
+
+			sum += gauss
+
+			maskRow = append(maskRow, gauss)
+		}
+
+		mask = append(mask, maskRow)
+	}
+
+	for x := range mask {
+		for y := range mask[x] {
+			mask[x][y] /= sum
+		}
+	}
+
+	return mask
+}
+
+func GuassianFilter(maskSize int, sigma float64, matrix *[][][3]uint8) *[][][3]uint8 {
+	mask := makeGaussMask(maskSize, sigma)
+
+	result := applyFilter(matrix, mask, func(pixels []float64) uint8 {
+		sum := 0.0
+		for _, pixel := range pixels {
+			sum += pixel
+		}
+		return uint8(sum)
+	})
+
+	return result
+}
