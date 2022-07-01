@@ -1,6 +1,7 @@
 package imgprocessing
 
 import (
+	"fmt"
 	"math"
 	"sort"
 )
@@ -511,6 +512,19 @@ func calcGaussian2d(x float64, y float64, sigma float64) float64 {
 	return math.Pow(math.E, eExp) / (2 * math.Pi * sigma2)
 }
 
+func Matrix2String(t *[][]float64) string {
+	s := ""
+
+	for i := range *t {
+		for _, n := range (*t)[i] {
+			s += fmt.Sprintf("%v ", math.Ceil(n*255))
+		}
+		s += "\n"
+	}
+
+	return s
+}
+
 func MakeGaussMask(size int, sigma float64) [][]float64 {
 	halfSize := size / 2
 
@@ -531,6 +545,8 @@ func MakeGaussMask(size int, sigma float64) [][]float64 {
 
 		mask = append(mask, maskRow)
 	}
+
+	fmt.Println(Matrix2String(&mask))
 
 	for x := range mask {
 		for y := range mask[x] {
